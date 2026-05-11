@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import { Moon } from 'lucide-react';
+import { ThemeToggleButton } from '@/components/theme/ThemeToggleButton';
 
 const pageMeta: Record<string, { title: string; subtitle: string }> = {
   '/': {
@@ -46,25 +46,22 @@ export const TopBar = () => {
   const meta = pageMeta[pathname] ?? pageMeta['/'];
 
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-64 h-20 bg-white border-b border-slate-100 z-30 px-4 md:px-10 flex items-center justify-between">
+    <header className="fixed top-0 right-0 left-0 lg:left-64 h-20 z-30 px-4 md:px-10 flex items-center justify-between bg-[var(--shell-header)] border-b border-[var(--shell-header-border)] transition-colors duration-200">
       <div className="pl-12 lg:pl-0">
-        <h1 className="text-lg md:text-[22px] font-bold text-slate-900 tracking-tight leading-none mb-1">
+        <h1 className="text-lg md:text-[22px] font-bold text-[var(--foreground)]  leading-none mb-1">
           {meta.title}
         </h1>
-        <p className="hidden lg:block text-[11px] text-slate-400 font-bold tracking-tight">
+        <p className="hidden lg:block text-[11px] text-[var(--shell-muted)] font-bold ">
           {meta.subtitle}
         </p>
       </div>
 
       <div className="flex items-center gap-2 md:gap-3">
-        <button className="hidden sm:flex items-center gap-2 px-4 md:px-5 py-2 rounded-full border border-slate-100 bg-white text-slate-900 transition-all shadow-sm">
-          <Moon size={15} className="text-amber-400" fill="currentColor" />
-          <span className="text-[12px] font-black tracking-tight">Dark Mode</span>
-        </button>
+        <ThemeToggleButton />
 
-        <div className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-full bg-[#D1FAE5] border border-[#A7F3D0]">
-          <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[#10B981]" />
-          <span className="text-[9px] md:text-[11px] font-black text-[#059669] tracking-tight">
+        <div className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-full bg-[var(--shell-success-bg)] border border-[var(--shell-success-border)]">
+          <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-[var(--shell-success-dot)] shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+          <span className="text-[9px] md:text-[11px] font-black text-[var(--shell-success-text)] ">
             Platform Healthy
           </span>
         </div>

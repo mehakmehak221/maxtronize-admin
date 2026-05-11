@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, XCircle, Download, Eye } from 'lucide-react';
 import Link from 'next/link';
+import { PageEnter } from '@/components/layout/PageEnter';
 
 const pendingAssets = [
   {
@@ -44,81 +45,147 @@ const pendingAssets = [
   }
 ];
 
+function typePill(type: string) {
+  if (type === 'Real Estate') {
+    return 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300';
+  }
+  if (type === 'Infrastructure') {
+    return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300';
+  }
+  return 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300';
+}
+
+function statusPill(status: string) {
+  if (status === 'Under Review') {
+    return 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300';
+  }
+  return 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300';
+}
+
 export default function AssetsPage() {
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 bg-[#F8FAFC] min-h-screen pb-20">
+    <PageEnter className="p-4 md:p-8 space-y-6 md:space-y-8 min-h-screen pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Asset Management</h1>
-          <p className="text-xs md:text-sm font-bold text-slate-400 mt-1">Review and manage platform assets</p>
+          <h1 className="text-xl md:text-2xl font-black text-[var(--foreground)] ">
+            Asset Management
+          </h1>
+          <p className="text-xs md:text-sm font-bold text-[var(--shell-muted)] mt-1">
+            Review and manage platform assets
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 md:px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
+          <button
+            type="button"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 md:px-5 py-2.5 rounded-xl border border-[var(--shell-card-border)] bg-[var(--shell-card)] text-[var(--foreground)] font-bold text-sm hover:bg-[var(--shell-subtle)] transition-all shadow-sm dark:shadow-none"
+          >
             <Download size={18} />
             Export Data
           </button>
         </div>
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-[24px] md:rounded-[32px] border border-slate-100 shadow-sm overflow-hidden"
+        className="bg-[var(--shell-card)] rounded-[24px] md:rounded-[32px] border border-[var(--shell-card-border)] shadow-sm dark:shadow-none overflow-hidden transition-colors duration-200"
       >
-        <div className="p-6 md:p-8 border-b border-slate-50">
-           <h2 className="text-base md:text-lg font-black text-slate-900">Pending Asset Approvals ({pendingAssets.length})</h2>
-           <p className="text-xs md:text-sm font-bold text-slate-400 mt-1">Review and approve submitted assets</p>
+        <div className="p-6 md:p-8 border-b border-[var(--shell-card-border)]">
+          <h2 className="text-base md:text-lg font-black text-[var(--foreground)]">
+            Pending Asset Approvals ({pendingAssets.length})
+          </h2>
+          <p className="text-xs md:text-sm font-bold text-[var(--shell-muted)] mt-1">
+            Review and approve submitted assets
+          </p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead>
-              <tr className="border-b border-slate-50">
-                <th className="px-6 md:px-8 py-5 md:py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">ASSET ID</th>
-                <th className="px-4 md:px-6 py-5 md:py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">ASSET NAME</th>
-                <th className="px-4 md:px-6 py-5 md:py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">ISSUER</th>
-                <th className="px-4 md:px-6 py-5 md:py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">TYPE</th>
-                <th className="px-4 md:px-6 py-5 md:py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">AMOUNT</th>
-                <th className="px-4 md:px-6 py-5 md:py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">DATE</th>
-                <th className="px-4 md:px-6 py-5 md:py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">STATUS</th>
-                <th className="px-6 md:px-8 py-5 md:py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">ACTIONS</th>
+              <tr className="border-b border-[var(--shell-card-border)]">
+                <th className="px-6 md:px-8 py-5 md:py-6 text-[10px] font-black text-[var(--shell-muted)] uppercase ">
+                  ASSET ID
+                </th>
+                <th className="px-4 md:px-6 py-5 md:py-6 text-[10px] font-black text-[var(--shell-muted)] uppercase ">
+                  ASSET NAME
+                </th>
+                <th className="px-4 md:px-6 py-5 md:py-6 text-[10px] font-black text-[var(--shell-muted)] uppercase ">
+                  ISSUER
+                </th>
+                <th className="px-4 md:px-6 py-5 md:py-6 text-[10px] font-black text-[var(--shell-muted)] uppercase ">
+                  TYPE
+                </th>
+                <th className="px-4 md:px-6 py-5 md:py-6 text-[10px] font-black text-[var(--shell-muted)] uppercase ">
+                  AMOUNT
+                </th>
+                <th className="px-4 md:px-6 py-5 md:py-6 text-[10px] font-black text-[var(--shell-muted)] uppercase ">
+                  DATE
+                </th>
+                <th className="px-4 md:px-6 py-5 md:py-6 text-[10px] font-black text-[var(--shell-muted)] uppercase ">
+                  STATUS
+                </th>
+                <th className="px-6 md:px-8 py-5 md:py-6 text-[10px] font-black text-[var(--shell-muted)] uppercase  text-right">
+                  ACTIONS
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-[var(--shell-card-border)]">
               {pendingAssets.map((asset) => (
-                <tr key={asset.id} className="group hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 md:px-8 py-5 md:py-6 text-sm font-black text-slate-900 whitespace-nowrap">{asset.id}</td>
+                <tr
+                  key={asset.id}
+                  className="group hover:bg-[var(--shell-subtle)] transition-colors"
+                >
+                  <td className="px-6 md:px-8 py-5 md:py-6 text-sm font-black text-[var(--foreground)] whitespace-nowrap">
+                    {asset.id}
+                  </td>
                   <td className="px-4 md:px-6 py-5 md:py-6">
-                    <Link href={`/assets/${asset.id}`} className="text-sm font-black text-slate-900 hover:text-[#9810FA] transition-colors whitespace-nowrap">
-                       {asset.name}
+                    <Link
+                      href={`/assets/${asset.id}`}
+                      className="text-sm font-black text-[var(--foreground)] hover:text-[var(--shell-active)] transition-colors whitespace-nowrap"
+                    >
+                      {asset.name}
                     </Link>
                   </td>
-                  <td className="px-4 md:px-6 py-5 md:py-6 text-sm font-bold text-slate-400 whitespace-nowrap">{asset.issuer}</td>
+                  <td className="px-4 md:px-6 py-5 md:py-6 text-sm font-bold text-[var(--shell-muted)] whitespace-nowrap">
+                    {asset.issuer}
+                  </td>
                   <td className="px-4 md:px-6 py-5 md:py-6">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${
-                      asset.type === 'Real Estate' ? 'bg-[#F5F3FF] text-[#9810FA]' : 
-                      asset.type === 'Infrastructure' ? 'bg-indigo-50 text-indigo-600' : 'bg-purple-50 text-purple-600'
-                    }`}>
-                       {asset.type}
+                    <span
+                      className={`px-3 py-1 rounded-full text-[10px] font-black uppercase  whitespace-nowrap ${typePill(asset.type)}`}
+                    >
+                      {asset.type}
                     </span>
                   </td>
-                  <td className="px-4 md:px-6 py-5 md:py-6 text-sm font-black text-slate-900">{asset.amount}</td>
-                  <td className="px-4 md:px-6 py-5 md:py-6 text-sm font-bold text-slate-400 whitespace-nowrap">{asset.date}</td>
+                  <td className="px-4 md:px-6 py-5 md:py-6 text-sm font-black text-[var(--foreground)]">
+                    {asset.amount}
+                  </td>
+                  <td className="px-4 md:px-6 py-5 md:py-6 text-sm font-bold text-[var(--shell-muted)] whitespace-nowrap">
+                    {asset.date}
+                  </td>
                   <td className="px-4 md:px-6 py-5 md:py-6">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${
-                      asset.status === 'Under Review' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'
-                    }`}>
-                       {asset.status}
+                    <span
+                      className={`px-3 py-1 rounded-full text-[10px] font-black uppercase  whitespace-nowrap ${statusPill(asset.status)}`}
+                    >
+                      {asset.status}
                     </span>
                   </td>
                   <td className="px-6 md:px-8 py-5 md:py-6 text-right">
                     <div className="flex justify-end gap-2 md:gap-3">
-                      <Link href={`/assets/${asset.id}`} className="p-2 text-slate-300 hover:text-[#9810FA] transition-colors">
+                      <Link
+                        href={`/assets/${asset.id}`}
+                        className="p-2 text-[var(--shell-muted)] hover:text-[var(--shell-active)] transition-colors"
+                      >
                         <Eye size={18} />
                       </Link>
-                      <button className="p-2 text-emerald-400 hover:text-emerald-600 transition-colors">
+                      <button
+                        type="button"
+                        className="p-2 text-emerald-500 hover:text-emerald-400 transition-colors"
+                      >
                         <CheckCircle2 size={18} />
                       </button>
-                      <button className="p-2 text-rose-400 hover:text-rose-600 transition-colors">
+                      <button
+                        type="button"
+                        className="p-2 text-rose-500 hover:text-rose-400 transition-colors"
+                      >
                         <XCircle size={18} />
                       </button>
                     </div>
@@ -129,6 +196,6 @@ export default function AssetsPage() {
           </table>
         </div>
       </motion.div>
-    </div>
+    </PageEnter>
   );
 }

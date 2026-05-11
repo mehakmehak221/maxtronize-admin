@@ -22,7 +22,7 @@ export function LayoutWrapper({ children }: { children: ReactNode }) {
 
   if (isDetailView) {
     return (
-      <main className="min-h-screen bg-[#F8FAFC]">
+      <main className="min-h-screen bg-[var(--shell-main)] transition-colors duration-200">
         {children}
       </main>
     );
@@ -32,7 +32,7 @@ export function LayoutWrapper({ children }: { children: ReactNode }) {
     <>
       <Sidebar />
       <TopBar />
-      <main className="lg:pl-64 pt-20 min-h-screen">
+      <main className="lg:pl-64 pt-20 min-h-screen bg-[var(--shell-main)] transition-colors duration-200">
         {children}
       </main>
     </>

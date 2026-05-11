@@ -20,7 +20,7 @@ export const Navbar = () => {
           <div className="w-10 h-10 bg-gradient-to-tr from-[#155DFC] to-[#9810FA] rounded-xl flex items-center justify-center">
             <LayoutDashboard className="text-white w-6 h-6" />
           </div>
-          <span className="text-xl font-bold font-heading tracking-tight">Maxtronize<span className="text-[#155DFC]">.</span></span>
+          <span className="text-xl font-bold font-heading ">Maxtronize<span className="text-[#155DFC]">.</span></span>
         </div>
 
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">

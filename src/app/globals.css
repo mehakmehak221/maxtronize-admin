@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-brand-primary: #155DFC;
   --color-brand-secondary: #9810FA;
@@ -11,6 +13,40 @@
   --color-bg-deep: #0F172B;
   --color-bg-card: #1E1B4B;
   --color-bg-surface: #312E81;
+
+  --color-ds-white: #FFFFFF;
+  --color-ds-off-white: #FAFAFA;
+  --color-ds-canvas-950: #020618;
+  --color-ds-canvas-900: #0A0A0A;
+  --color-ds-navy-900: #0F172B;
+  --color-ds-navy-800: #1D293D;
+  --color-ds-slate-500: #64748B;
+  --color-ds-slate-400: #94A3B8;
+  --color-ds-steel: #90A1B9;
+  --color-ds-purple-900: #59168B;
+  --color-ds-purple-deep: #7C3AED;
+  --color-ds-purple-brand: #9810FA;
+  --color-ds-purple-bright: #AD46FF;
+  --color-ds-purple-soft: #C27AFF;
+  --color-ds-lavender-light: #E8DEFF;
+  --color-ds-lavender-mute: #C3B5E4;
+  --color-ds-blue-vivid: #615FFF;
+  --color-ds-blue-sky: #60A5FA;
+  --color-ds-blue-mist: #DBEAFE;
+  --color-ds-mint-pale: #D0FAE5;
+  --color-ds-green: #00BC7D;
+  --color-ds-green-bright: #00D492;
+  --color-ds-green-mint: #34D399;
+  --color-ds-amber: #FBBF24;
+  --color-ds-cream: #FEF3C6;
+  --color-ds-coral: #FB7185;
+  --color-ds-black-10: rgba(0, 0, 0, 0.1);
+  --color-ds-white-5: rgba(255, 255, 255, 0.05);
+  --color-ds-navy-800-50: rgba(29, 41, 61, 0.5);
+  --color-ds-purple-brand-10: rgba(152, 16, 250, 0.1);
+  --color-ds-purple-bright-20: rgba(173, 70, 255, 0.2);
+  --color-ds-purple-900-30: rgba(89, 22, 139, 0.3);
+  --color-ds-transparent: transparent;
   
   --font-jakarta: var(--font-plus-jakarta), sans-serif;
 
@@ -23,12 +59,125 @@
   }
 }
 
+
 :root {
-  --background: #0F172B;
-  --foreground: #F8FAFC;
-  --primary: #155DFC;
-  --secondary: #9810FA;
-  --accent: #10B981;
+  color-scheme: light;
+
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --primary: #155dfc;
+  --secondary: #9810fa;
+  --accent: #10b981;
+
+  --shell-sidebar: #ffffff;
+  --shell-sidebar-border: #e2e8f0;
+  --shell-header: #ffffff;
+  --shell-header-border: #e2e8f0;
+  --shell-main: #f8fafc;
+  --shell-card: #ffffff;
+  --shell-card-border: #f1f5f9;
+  --shell-muted: #64748b;
+  --shell-active: #9810fa;
+  --shell-chart-grid: #f1f5f9;
+  --shell-tooltip-bg: #ffffff;
+  --shell-tooltip-fg: #0f172a;
+  --shell-tooltip-border: #e2e8f0;
+  --shell-success-bg: #d1fae5;
+  --shell-success-border: #a7f3d0;
+  --shell-success-text: #059669;
+  --shell-success-dot: #10b981;
+  --shell-toggle-bg: #ffffff;
+  --shell-toggle-border: #e2e8f0;
+  --shell-toggle-fg: #0f172a;
+  --shell-mobile-btn: #ffffff;
+  --shell-mobile-btn-border: #e2e8f0;
+  --shell-subtle: rgba(15, 23, 42, 0.04);
+  --shell-inset: #f1f5f9;
+
+  --ds-bg-elevated: var(--color-ds-white);
+  --ds-border-default: var(--color-ds-black-10);
+  --ds-selection-slate: var(--color-ds-slate-500);
+  --ds-selection-navy: var(--color-ds-navy-800);
+  --ds-selection-purple: var(--color-ds-purple-bright);
+  --ds-selection-mint: var(--color-ds-green-mint);
+  --ds-selection-mint-bg: var(--color-ds-mint-pale);
+  --ds-selection-coral: var(--color-ds-coral);
+  --ds-selection-purple-brand: var(--color-ds-purple-brand);
+  --ds-text-primary: var(--color-ds-navy-900);
+  --ds-text-on-inverse: var(--color-ds-off-white);
+  --ds-accent-blue: var(--color-ds-blue-vivid);
+  --ds-accent-sky: var(--color-ds-blue-sky);
+  --ds-accent-indigo: var(--color-ds-purple-deep);
+  --ds-accent-amber: var(--color-ds-amber);
+  --ds-accent-green: var(--color-ds-green);
+  --ds-accent-green-bright: var(--color-ds-green-bright);
+  --ds-highlight-cream: var(--color-ds-cream);
+  --ds-highlight-lavender: var(--color-ds-purple-soft);
+  --ds-highlight-blue-mist: var(--color-ds-blue-mist);
+  --ds-surface-overlay: var(--color-ds-navy-800-50);
+
+  --ds-gradient-lavender: linear-gradient(98.82deg, #e8deff 0%, #ffffff 100%);
+  --ds-gradient-mauve: linear-gradient(180deg, #c3b5e4 0%, #ffffff 100%);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: #0b0e14;
+  --foreground: #ffffff;
+  --primary: #155dfc;
+  --secondary: #9810fa;
+  --accent: #10b981;
+
+  --shell-sidebar: #0f172b;
+  --shell-sidebar-border: rgba(255, 255, 255, 0.08);
+  --shell-header: #0f172b;
+  --shell-header-border: rgba(255, 255, 255, 0.08);
+  --shell-main: #0b0e14;
+  --shell-card: #0f172b;
+  --shell-card-border: rgba(255, 255, 255, 0.1);
+  --shell-muted: #94a3b8;
+  --shell-active: #8b5cf6;
+  --shell-chart-grid: rgba(255, 255, 255, 0.06);
+  --shell-tooltip-bg: #0f172b;
+  --shell-tooltip-fg: #f8fafc;
+  --shell-tooltip-border: rgba(255, 255, 255, 0.12);
+  --shell-success-bg: rgba(16, 185, 129, 0.14);
+  --shell-success-border: rgba(16, 185, 129, 0.3);
+  --shell-success-text: #4ade80;
+  --shell-success-dot: #22c55e;
+  --shell-toggle-bg: #0f172b;
+  --shell-toggle-border: rgba(255, 255, 255, 0.14);
+  --shell-toggle-fg: #f8fafc;
+  --shell-mobile-btn: #0f172b;
+  --shell-mobile-btn-border: rgba(255, 255, 255, 0.1);
+  --shell-subtle: rgba(255, 255, 255, 0.045);
+  --shell-inset: rgba(255, 255, 255, 0.04);
+
+  --ds-bg-elevated: var(--color-ds-white);
+  --ds-border-default: var(--color-ds-black-10);
+  --ds-selection-slate: var(--color-ds-slate-500);
+  --ds-selection-navy: var(--color-ds-navy-800);
+  --ds-selection-purple: var(--color-ds-purple-bright);
+  --ds-selection-mint: var(--color-ds-green-mint);
+  --ds-selection-mint-bg: var(--color-ds-mint-pale);
+  --ds-selection-coral: var(--color-ds-coral);
+  --ds-selection-purple-brand: var(--color-ds-purple-brand);
+  --ds-text-primary: var(--color-ds-off-white);
+  --ds-text-on-inverse: var(--color-ds-navy-900);
+  --ds-accent-blue: var(--color-ds-blue-vivid);
+  --ds-accent-sky: var(--color-ds-blue-sky);
+  --ds-accent-indigo: var(--color-ds-purple-deep);
+  --ds-accent-amber: var(--color-ds-amber);
+  --ds-accent-green: var(--color-ds-green);
+  --ds-accent-green-bright: var(--color-ds-green-bright);
+  --ds-highlight-cream: var(--color-ds-cream);
+  --ds-highlight-lavender: var(--color-ds-purple-soft);
+  --ds-highlight-blue-mist: var(--color-ds-blue-mist);
+  --ds-surface-overlay: var(--color-ds-navy-800-50);
+
+  --ds-gradient-lavender: linear-gradient(98.82deg, #e8deff 0%, #ffffff 100%);
+  --ds-gradient-mauve: linear-gradient(180deg, #c3b5e4 0%, #ffffff 100%);
 }
 
 body {

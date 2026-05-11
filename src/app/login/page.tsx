@@ -43,7 +43,7 @@ export default function LoginPage() {
                 <Shield className="text-white w-8 h-8" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-white mb-1.5 tracking-tight">
+            <h1 className="text-2xl font-bold text-white mb-1.5 ">
               Admin Access
             </h1>
             <p className="text-slate-400 text-sm font-medium">Maxtronize Super Admin Panel</p>
@@ -53,18 +53,18 @@ export default function LoginPage() {
           <div className="px-8 py-3 bg-black/40 border-y border-white/5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10B981]" />
-              <span className="text-emerald-500 text-[10px] font-bold uppercase tracking-widest">System Online</span>
+              <span className="text-emerald-500 text-[10px] font-bold uppercase ">System Online</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Terminal className="text-[#9810FA] w-3.5 h-3.5" />
-              <span className="text-[#9810FA] text-[10px] font-mono font-bold tracking-tight">v4.2.1 Stable</span>
+              <span className="text-[#9810FA] text-[10px] font-mono font-bold ">v4.2.1 Stable</span>
             </div>
           </div>
 
           {/* Form Section */}
           <div className="p-10 space-y-7">
             <div className="space-y-2.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] block ml-1">Admin Email</label>
+              <label className="text-[10px] font-bold text-slate-500 uppercase  block ml-1">Admin Email</label>
               <input
                 type="email"
                 placeholder="admin@maxtronize.com"
@@ -77,7 +77,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] block ml-1">Password</label>
+              <label className="text-[10px] font-bold text-slate-500 uppercase  block ml-1">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -117,7 +117,7 @@ export default function LoginPage() {
               Secure Admin Login
             </button>
 
-            <p className="text-center text-slate-600 text-[10px] font-medium tracking-wide">
+            <p className="text-center text-slate-600 text-[10px] font-medium ">
               Protected by bank-grade encryption • All activity logged
             </p>
           </div>
@@ -133,7 +133,7 @@ export default function LoginPage() {
           <div className="w-4 h-4 text-amber-500">
              <Shield size={14} fill="currentColor" fillOpacity={0.2} />
           </div>
-          <p className="text-[11px] font-bold tracking-tight">
+          <p className="text-[11px] font-bold ">
             <span className="text-amber-500/90">Authorized personnel only</span>
             <span className="text-slate-700 mx-2">•</span>
             <span className="text-rose-500/80">Unauthorized access is prohibited</span>
