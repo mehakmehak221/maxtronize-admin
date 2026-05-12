@@ -4,6 +4,7 @@ import { Inter, Outfit } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
+import { StoreProvider } from "@/components/providers/StoreProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 const inter = Inter({
@@ -38,9 +39,11 @@ export default function RootLayout({
             __html: `(function(){try{var t=localStorage.getItem('maxtronize-theme');document.documentElement.classList.toggle('dark',t!=='light');}catch(e){document.documentElement.classList.add('dark');}})();`,
           }}
         />
-        <ThemeProvider>
-          <LayoutWrapper>{children}</LayoutWrapper>
-        </ThemeProvider>
+        <StoreProvider>
+          <ThemeProvider>
+            <LayoutWrapper>{children}</LayoutWrapper>
+          </ThemeProvider>
+        </StoreProvider>
       </body>
     </html>
   );
