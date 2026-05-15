@@ -2,7 +2,7 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { Menu } from "lucide-react";
 import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
 import { useShell } from "@/components/layout/ShellContext";
 
@@ -59,19 +59,25 @@ export const TopBar = () => {
 
   return (
     <header
-      className={`fixed top-0 right-0 left-0 lg:left-64 h-16 sm:h-20 px-3 sm:px-6 md:px-10 flex items-center justify-between gap-2 sm:gap-4 bg-[var(--shell-header)] border-b border-[var(--shell-header-border)] transition-colors duration-200 ${
-        sidebarOpen ? "z-[60]" : "z-40"
+      className={`fixed top-0 right-0 z-40 h-16 sm:h-20 px-3 sm:px-6 md:px-10 flex items-center bg-[var(--shell-header)] border-b border-[var(--shell-header-border)] transition-[left] duration-300 ease-in-out ${
+        sidebarOpen
+          ? "left-[min(100vw-3rem,16rem)] sm:left-64 lg:left-64 justify-end"
+          : "left-0 lg:left-64 justify-between"
       }`}
     >
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+      <div
+        className={`flex items-center gap-2 sm:gap-3 min-w-0 flex-1 ${
+          sidebarOpen ? "max-lg:hidden" : ""
+        }`}
+      >
         <button
           type="button"
           onClick={toggleSidebar}
           className="lg:hidden shrink-0 p-2 rounded-xl border border-[var(--shell-mobile-btn-border)] bg-[var(--shell-mobile-btn)] text-[var(--foreground)] shadow-sm hover:opacity-90 transition-opacity"
-          aria-label={sidebarOpen ? "Close menu" : "Open menu"}
+          aria-label="Open menu"
           aria-expanded={sidebarOpen}
         >
-          {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+          <Menu size={20} />
         </button>
 
         <div className="min-w-0 flex-1">

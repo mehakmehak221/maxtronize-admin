@@ -40,27 +40,28 @@ export const Sidebar = () => {
     <>
       {sidebarOpen && (
         <div 
-          className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity"
+          className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-[45] transition-opacity"
           onClick={() => setSidebarOpen(false)}
           aria-hidden
         />
       )}
 
       <aside className={`
-        fixed left-0 top-0 h-screen w-[min(100vw-3rem,16rem)] sm:w-64 z-50 flex flex-col transition-transform duration-300 ease-in-out
+        fixed left-0 top-0 h-dvh max-h-dvh w-[min(100vw-3rem,16rem)] sm:w-64 z-[50] flex flex-col overflow-hidden transition-transform duration-300 ease-in-out shadow-xl
         border-r border-[var(--shell-sidebar-border)] bg-[var(--shell-sidebar)] text-[var(--foreground)]
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="px-5 sm:px-7 h-20 flex items-center justify-between gap-3 border-b border-[var(--shell-sidebar-border)]">
+        <div className="px-4 sm:px-7 h-16 sm:h-20 flex items-center justify-between gap-2 border-b border-[var(--shell-sidebar-border)] shrink-0">
           <Link
             href="/"
             onClick={() => setSidebarOpen(false)}
-            className="relative h-12 flex-1 min-w-0 no-underline outline-none"
+            className="relative block h-9 w-[9.5rem] sm:h-10 sm:w-[10.5rem] shrink-0 no-underline outline-none"
           >
             <Image 
               src="/maxtronizelogo.png" 
               alt="Maxtronize" 
               fill
+              sizes="168px"
               className="object-contain object-left dark:brightness-0 dark:invert"
               priority
             />
@@ -75,7 +76,7 @@ export const Sidebar = () => {
           </button>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+        <nav className="flex-1 min-h-0 px-4 py-4 sm:py-6 space-y-1 overflow-y-auto overscroll-contain">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -107,7 +108,7 @@ export const Sidebar = () => {
           })}
         </nav>
 
-        <div className="p-6 border-t border-[var(--shell-sidebar-border)]">
+        <div className="p-4 sm:p-6 border-t border-[var(--shell-sidebar-border)] shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[var(--shell-active)] flex items-center justify-center text-white font-black text-xs shadow-lg shadow-[var(--shell-active)]/25">
               PA
