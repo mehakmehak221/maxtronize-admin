@@ -20,6 +20,11 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "Maxtronize Admin | Premium Dashboard",
   description: "Advanced analytics and management for Maxtronize.",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
