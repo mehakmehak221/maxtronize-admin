@@ -113,7 +113,11 @@ export const Sidebar = () => {
               <p className="text-[11px] font-bold text-[var(--shell-muted)] mt-0.5">Super Admin</p>
             </div>
             <button 
-              onClick={() => router.push('/login')}
+              onClick={() => {
+                localStorage.removeItem("maxtronize-admin-token");
+                localStorage.removeItem("maxtronize-admin-2fa");
+                router.push('/login');
+              }}
               className="p-2 text-[var(--shell-muted)] hover:text-rose-500 transition-colors"
             >
               <LogOut size={18} />

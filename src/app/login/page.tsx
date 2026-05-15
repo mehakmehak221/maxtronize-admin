@@ -1,12 +1,39 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Shield, Eye, EyeOff, Terminal, Lock } from 'lucide-react';
 
+const AUTH_TOKEN_KEY = "maxtronize-admin-token";
+
 export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [twoFA, setTwoFA] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem(AUTH_TOKEN_KEY)) {
+      router.replace("/");
+    }
+  }, [router]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) return;
+
+    setIsSubmitting(true);
+    localStorage.setItem(AUTH_TOKEN_KEY, "session");
+    if (twoFA) {
+      localStorage.setItem("maxtronize-admin-2fa", "enabled");
+    } else {
+      localStorage.removeItem("maxtronize-admin-2fa");
+    }
+    router.push("/");
+  };
 
   return (
     <main
@@ -62,12 +89,16 @@ export default function LoginPage() {
           </div>
 
           {/* Form Section */}
-          <div className="p-10 space-y-7">
+          <form onSubmit={handleLogin} className="p-10 space-y-7">
             <div className="space-y-2.5">
               <label className="text-[10px] font-bold text-slate-500 uppercase  block ml-1">Admin Email</label>
               <input
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@maxtronize.com"
+                required
+                autoComplete="email"
                 className="w-full px-5 py-3.5 rounded-2xl text-sm text-white placeholder:text-slate-600 focus:outline-none transition-all"
                 style={{
                   background: 'rgba(0,0,0,0.3)',
@@ -81,7 +112,11 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••"
+                  required
+                  autoComplete="current-password"
                   className="w-full px-5 py-3.5 pr-12 rounded-2xl text-sm text-white placeholder:text-slate-600 focus:outline-none transition-all"
                   style={{
                     background: 'rgba(0,0,0,0.3)',
@@ -107,20 +142,22 @@ export default function LoginPage() {
             </div>
 
             <button
-              className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
               style={{
                 background: 'linear-gradient(135deg, #9810FA 0%, #6366F1 100%)',
                 boxShadow: '0 8px 32px rgba(152,16,250,0.4)',
               }}
             >
               <Lock size={18} />
-              Secure Admin Login
+              {isSubmitting ? "Signing in…" : "Secure Admin Login"}
             </button>
 
             <p className="text-center text-slate-600 text-[10px] font-medium ">
               Protected by bank-grade encryption • All activity logged
             </p>
-          </div>
+          </form>
         </motion.div>
 
         {/* Footer Text */}
