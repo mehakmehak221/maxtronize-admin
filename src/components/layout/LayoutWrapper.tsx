@@ -4,6 +4,7 @@ import React, { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { TopBar } from "@/components/dashboard/TopBar";
+import { ShellProvider } from "@/components/layout/ShellContext";
 
 export function LayoutWrapper({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -29,12 +30,12 @@ export function LayoutWrapper({ children }: { children: ReactNode }) {
   }
 
   return (
-    <>
+    <ShellProvider>
       <Sidebar />
       <TopBar />
-      <main className="lg:pl-64 pt-20 min-h-screen bg-[var(--shell-main)] transition-colors duration-200">
+      <main className="lg:pl-64 pt-16 sm:pt-20 min-h-screen bg-[var(--shell-main)] transition-colors duration-200">
         {children}
       </main>
-    </>
+    </ShellProvider>
   );
 }

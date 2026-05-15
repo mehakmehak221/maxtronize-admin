@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -15,8 +15,8 @@ import {
   PieChart,
   LogOut,
   X,
-  Menu
 } from 'lucide-react';
+import { useShell } from '@/components/layout/ShellContext';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Overview', href: '/' },
@@ -32,35 +32,31 @@ const menuItems = [
 export const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
+  const { sidebarOpen, setSidebarOpen } = useShell();
   
   if (pathname === '/login') return null;
 
   return (
     <>
-      <div className="lg:hidden fixed top-4 left-4 z-[60]">
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-2.5 rounded-xl shadow-lg border border-[var(--shell-mobile-btn-border)] bg-[var(--shell-mobile-btn)] text-[var(--foreground)]"
-        >
-          {isOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </div>
-
-      {isOpen && (
+      {sidebarOpen && (
         <div 
           className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity"
-          onClick={() => setIsOpen(false)}
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden
         />
       )}
 
       <aside className={`
-        fixed left-0 top-0 h-screen w-64 z-50 flex flex-col transition-transform duration-300 ease-in-out
+        fixed left-0 top-0 h-screen w-[min(100vw-3rem,16rem)] sm:w-64 z-50 flex flex-col transition-transform duration-300 ease-in-out
         border-r border-[var(--shell-sidebar-border)] bg-[var(--shell-sidebar)] text-[var(--foreground)]
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="px-7 h-20 flex items-center border-b border-[var(--shell-sidebar-border)]">
-          <Link href="/" className="relative h-12 w-full no-underline outline-none">
+        <div className="px-5 sm:px-7 h-20 flex items-center justify-between gap-3 border-b border-[var(--shell-sidebar-border)]">
+          <Link
+            href="/"
+            onClick={() => setSidebarOpen(false)}
+            className="relative h-12 flex-1 min-w-0 no-underline outline-none"
+          >
             <Image 
               src="/maxtronizelogo.png" 
               alt="Maxtronize" 
@@ -69,6 +65,14 @@ export const Sidebar = () => {
               priority
             />
           </Link>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden shrink-0 p-2 rounded-xl border border-[var(--shell-mobile-btn-border)] bg-[var(--shell-mobile-btn)] text-[var(--foreground)] hover:opacity-90 transition-opacity"
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
@@ -78,7 +82,7 @@ export const Sidebar = () => {
               <Link 
                 key={item.label} 
                 href={item.href}
-                onClick={() => setIsOpen(false)}
+                onClick={() => setSidebarOpen(false)}
                 className={`flex items-center justify-between px-4 py-3 rounded-[14px] transition-all duration-200 group ${
                   isActive 
                     ? 'bg-[var(--shell-active)] text-white shadow-lg shadow-[var(--shell-active)]/25' 
