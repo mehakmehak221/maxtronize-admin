@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Shield, Eye, EyeOff, Terminal, Lock } from 'lucide-react';
+import { useLoginMutation } from '@/store';
 
 const AUTH_TOKEN_KEY = "maxtronize-admin-token";
 
@@ -13,7 +14,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [twoFA, setTwoFA] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const [login, { isLoading: isSubmitting }] = useLoginMutation();
 
   useEffect(() => {
     if (localStorage.getItem(AUTH_TOKEN_KEY)) {
@@ -21,18 +24,33 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) return;
 
-    setIsSubmitting(true);
-    localStorage.setItem(AUTH_TOKEN_KEY, "session");
-    if (twoFA) {
-      localStorage.setItem("maxtronize-admin-2fa", "enabled");
-    } else {
-      localStorage.removeItem("maxtronize-admin-2fa");
+    setErrorMsg("");
+
+    try {
+      const response = await login({
+        email: email.trim(),
+        password: password.trim(),
+        role: "ADMIN"
+      }).unwrap();
+
+      localStorage.setItem(AUTH_TOKEN_KEY, response.id);
+      localStorage.setItem("maxtronize-admin-role", response.role);
+
+      if (twoFA) {
+        localStorage.setItem("maxtronize-admin-2fa", "enabled");
+      } else {
+        localStorage.removeItem("maxtronize-admin-2fa");
+      }
+      router.push("/");
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      const message = err?.data?.message || err?.message || "Invalid credentials or server error. Please try again.";
+      setErrorMsg(message);
     }
-    router.push("/");
   };
 
   return (
@@ -90,6 +108,12 @@ export default function LoginPage() {
 
           {/* Form Section */}
           <form onSubmit={handleLogin} className="p-10 space-y-7">
+            {errorMsg && (
+              <div className="p-4 rounded-xl text-xs font-semibold text-rose-400 border border-rose-500/25 bg-rose-500/10 flex items-center gap-2.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
             <div className="space-y-2.5">
               <label className="text-[10px] font-bold text-slate-500 uppercase  block ml-1">Admin Email</label>
               <input
