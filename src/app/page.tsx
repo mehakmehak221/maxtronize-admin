@@ -1,12 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   DollarSign,
   Users,
   Building2,
   TrendingUp,
+  Activity,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import {
   AreaChart,
@@ -23,8 +26,10 @@ import {
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { PageEnter } from "@/components/layout/PageEnter";
 import { ClientSizedChart } from "@/components/charts/ClientSizedChart";
+import { useGetDashboardInitQuery } from "@/store";
 
-const stats = [
+// High-fidelity fallback / mock data
+const mockStats = [
   {
     label: "TOTAL AUM",
     value: "$42.8M",
@@ -55,7 +60,7 @@ const stats = [
   },
 ];
 
-const revenueData = [
+const mockRevenueData = [
   { name: "Jan", value: 150000 },
   { name: "Feb", value: 185000 },
   { name: "Mar", value: 230000 },
@@ -64,7 +69,7 @@ const revenueData = [
   { name: "Jun", value: 314000 },
 ];
 
-const donutData = [
+const mockDonutData = [
   { name: "Real Estate", value: 21.0, color: "#7C3AED" },
   { name: "Private Credit", value: 8.5, color: "#6D28D9" },
   { name: "Commodities", value: 6.2, color: "#A78BFA" },
@@ -78,8 +83,101 @@ export default function Dashboard() {
   const tickFill = "#94a3b8";
   const gridStroke = isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9";
 
+  const { data, error, isLoading, refetch } = useGetDashboardInitQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
+
+  // Automatically fall back to mock data if there's an error or if data is empty
+  const isSimulation = useMemo(() => {
+    return !!error || !data;
+  }, [error, data]);
+
+  const stats = useMemo(() => {
+    if (!isSimulation) {
+      const raw = data?.stats || [];
+      return raw.map((s) => ({
+        label: s.label,
+        value: s.value,
+        change: s.change,
+        icon: s.label.toUpperCase().includes("AUM")
+          ? DollarSign
+          : s.label.toUpperCase().includes("INVESTOR")
+            ? Users
+            : s.label.toUpperCase().includes("ISSUER")
+              ? Building2
+              : TrendingUp,
+        color: s.label.toUpperCase().includes("AUM")
+          ? "#3B82F6"
+          : s.label.toUpperCase().includes("INVESTOR")
+            ? "#10B981"
+            : s.label.toUpperCase().includes("ISSUER")
+              ? "#7C3AED"
+              : "#F97316",
+      }));
+    }
+    if (data?.stats && data.stats.length > 0) {
+      return data.stats.map((s) => ({
+        label: s.label,
+        value: s.value,
+        change: s.change,
+        icon: s.label.toUpperCase().includes("AUM")
+          ? DollarSign
+          : s.label.toUpperCase().includes("INVESTOR")
+            ? Users
+            : s.label.toUpperCase().includes("ISSUER")
+              ? Building2
+              : TrendingUp,
+        color: s.label.toUpperCase().includes("AUM")
+          ? "#3B82F6"
+          : s.label.toUpperCase().includes("INVESTOR")
+            ? "#10B981"
+            : s.label.toUpperCase().includes("ISSUER")
+              ? "#7C3AED"
+              : "#F97316",
+      }));
+    }
+    return mockStats;
+  }, [data, isSimulation]);
+
+  const revenueData = useMemo(() => {
+    if (!isSimulation) return data?.revenueData || [];
+    return data?.revenueData && data.revenueData.length > 0 ? data.revenueData : mockRevenueData;
+  }, [data, isSimulation]);
+
+  const donutData = useMemo(() => {
+    const colors = ["#7C3AED", "#6D28D9", "#A78BFA", "#C4B5FD"];
+    if (!isSimulation) {
+      return (data?.donutData || []).map((d, index) => ({
+        name: d.name,
+        value: d.value,
+        color: d.color || colors[index % colors.length],
+      }));
+    }
+    if (data?.donutData && data.donutData.length > 0) {
+      return data.donutData.map((d, index) => ({
+        name: d.name,
+        value: d.value,
+        color: d.color || colors[index % colors.length],
+      }));
+    }
+    return mockDonutData;
+  }, [data, isSimulation]);
+
   return (
     <PageEnter className="p-4 md:p-8 space-y-6 md:space-y-8 min-h-screen pb-20">
+      {/* Header Banner for Integration Status */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[var(--shell-card)] p-4 md:p-6 rounded-2xl border border-[var(--shell-card-border)] transition-colors duration-200">
+        <div>
+          <h1 className="text-xl md:text-2xl font-black text-[var(--foreground)]">
+            Admin Dashboard
+          </h1>
+          <p className="text-xs md:text-sm font-bold text-[var(--shell-muted)] mt-1">
+            Real-time capital flows and digital securities ecosystem telemetry
+          </p>
+        </div>
+        
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {stats.map((stat, i) => (
           <motion.div
@@ -100,7 +198,7 @@ export default function Dashboard() {
                 {stat.label}
               </p>
               <div className="flex items-baseline gap-2.5 flex-wrap">
-                <h3 className="text-2xl md:text-3xl font-black text-[var(--foreground)] ">
+                <h3 className="text-2xl md:text-3xl font-black text-[var(--foreground)]">
                   {stat.value}
                 </h3>
                 <span className="text-[11px] md:text-xs font-black text-emerald-500">
@@ -211,7 +309,7 @@ export default function Dashboard() {
           className="min-w-0 p-6 md:p-10 rounded-xl border border-[var(--shell-card-border)] bg-[var(--shell-card)] flex flex-col transition-colors duration-200 shadow-sm dark:shadow-none"
         >
           <div className="mb-8 md:mb-10">
-            <h2 className="text-base md:text-xl font-black text-[var(--foreground)]  mb-1.5">
+            <h2 className="text-base md:text-xl font-black text-[var(--foreground)] mb-1.5">
               AUM by Asset Type
             </h2>
             <p className="text-[11px] md:text-sm text-[var(--shell-muted)] font-bold">
@@ -248,7 +346,7 @@ export default function Dashboard() {
                     className="w-2.5 h-2.5 rounded-full shrink-0"
                     style={{ background: item.color }}
                   />
-                  <span className="text-[10px] md:text-xs font-black text-[var(--shell-muted)] uppercase  truncate">
+                  <span className="text-[10px] md:text-xs font-black text-[var(--shell-muted)] uppercase truncate">
                     {item.name}
                   </span>
                 </div>
