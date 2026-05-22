@@ -121,9 +121,10 @@ export default function AssetsPage() {
         const q = searchQuery.toLowerCase();
         list = list.filter(
           (a) =>
-            a.name?.toLowerCase().includes(q) ||
-            (a.issuer as string)?.toLowerCase().includes(q) ||
-            a.id?.toLowerCase().includes(q)
+            (a.assetName || a.name)?.toLowerCase().includes(q) ||
+            (a.issuerName || a.issuer as string)?.toLowerCase().includes(q) ||
+            a.id?.toLowerCase().includes(q) ||
+            a.assetCode?.toLowerCase().includes(q)
         );
       }
       return list;
@@ -285,41 +286,41 @@ export default function AssetsPage() {
                     className="group hover:bg-[var(--shell-subtle)] transition-colors"
                   >
                     <td className="px-6 md:px-8 py-5 md:py-6 text-sm font-black text-[var(--foreground)] whitespace-nowrap">
-                      {asset.id}
+                      {asset.assetCode || asset.id}
                     </td>
                     <td className="px-4 md:px-6 py-5 md:py-6">
                       <Link
                         href={`/assets/${asset.id}`}
                         className="text-sm font-black text-[var(--foreground)] hover:text-[var(--shell-active)] transition-colors whitespace-nowrap"
                       >
-                        {asset.name}
+                        {asset.assetName || asset.name}
                       </Link>
                     </td>
                     <td className="px-4 md:px-6 py-5 md:py-6 text-sm font-bold text-[var(--shell-muted)] whitespace-nowrap">
-                      {asset.issuer}
+                      {asset.issuerName || asset.issuer}
                     </td>
                     <td className="px-4 md:px-6 py-5 md:py-6">
                       <span
                         className={`px-3 py-1 rounded-full text-[10px] font-black uppercase whitespace-nowrap ${typePill(
-                          asset.type
+                          asset.assetTypeLabel || asset.assetType || asset.type
                         )}`}
                       >
-                        {asset.type}
+                        {asset.assetTypeLabel || asset.assetType || asset.type}
                       </span>
                     </td>
                     <td className="px-4 md:px-6 py-5 md:py-6 text-sm font-black text-[var(--foreground)]">
                       {asset.amount}
                     </td>
                     <td className="px-4 md:px-6 py-5 md:py-6 text-sm font-bold text-[var(--shell-muted)] whitespace-nowrap">
-                      {asset.date}
+                      {asset.submittedAt ? new Date(asset.submittedAt).toLocaleDateString() : asset.date}
                     </td>
                     <td className="px-4 md:px-6 py-5 md:py-6">
                       <span
                         className={`px-3 py-1 rounded-full text-[10px] font-black uppercase whitespace-nowrap ${statusPill(
-                          asset.status
+                          asset.reviewStatus || asset.status
                         )}`}
                       >
-                        {asset.status}
+                        {asset.reviewStatus || asset.status}
                       </span>
                     </td>
                     <td className="px-6 md:px-8 py-5 md:py-6 text-right">
@@ -332,7 +333,7 @@ export default function AssetsPage() {
                         </Link>
                         <button
                           type="button"
-                          onClick={() => handleApprove(asset.id, asset.name)}
+                          onClick={() => handleApprove(asset.id, asset.assetName || asset.name)}
                           className="p-2 text-emerald-500 hover:text-emerald-400 transition-colors"
                           title="Approve Asset"
                         >

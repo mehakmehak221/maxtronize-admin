@@ -73,13 +73,14 @@ export interface AssetInitResponse {
 
 function extractArray(response: any): any[] {
   if (!response) return [];
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response.data)) return response.data;
-  if (Array.isArray(response.assets)) return response.assets;
-  if (Array.isArray(response.results)) return response.results;
-  if (Array.isArray(response.list)) return response.list;
+  const root = response?.data ?? response;
+  if (Array.isArray(root)) return root;
+  if (Array.isArray(root.data)) return root.data;
+  if (Array.isArray(root.assets)) return root.assets;
+  if (Array.isArray(root.results)) return root.results;
+  if (Array.isArray(root.list)) return root.list;
   
-  const arrays = Object.values(response).filter(Array.isArray);
+  const arrays = Object.values(root).filter(Array.isArray);
   if (arrays.length > 0) return arrays[0] as any[];
   
   return [];
@@ -105,6 +106,7 @@ export const assetsApi = baseApi.injectEndpoints({
     getAssetById: builder.query<AssetDetail, string>({
       query: (id) => `/admin/assets/${id}`,
       providesTags: (result, error, id) => [{ type: "Asset", id }],
+      transformResponse: (response: any) => response?.data ?? response,
     }),
     getAssetInit: builder.query<AssetInitResponse, string>({
       query: (id) => `/admin/assets/${id}/init`,
@@ -112,14 +114,17 @@ export const assetsApi = baseApi.injectEndpoints({
         { type: "Asset", id },
         { type: "Asset", id: `${id}_init` },
       ],
+      transformResponse: (response: any) => response?.data ?? response,
     }),
     getAssetOverview: builder.query<any, string>({
       query: (id) => `/admin/assets/${id}/overview`,
       providesTags: (result, error, id) => [{ type: "Asset", id: `${id}_overview` }],
+      transformResponse: (response: any) => response?.data ?? response,
     }),
     getAssetCompliance: builder.query<AssetComplianceTab, string>({
       query: (id) => `/admin/assets/${id}/compliance`,
       providesTags: (result, error, id) => [{ type: "Asset", id: `${id}_compliance` }],
+      transformResponse: (response: any) => response?.data ?? response,
     }),
     getAssetDocuments: builder.query<AssetDocument[], string>({
       query: (id) => `/admin/assets/${id}/documents`,
@@ -129,6 +134,7 @@ export const assetsApi = baseApi.injectEndpoints({
     getAssetFinancials: builder.query<AssetFinancialsTab, string>({
       query: (id) => `/admin/assets/${id}/financials`,
       providesTags: (result, error, id) => [{ type: "Asset", id: `${id}_financials` }],
+      transformResponse: (response: any) => response?.data ?? response,
     }),
     approveAsset: builder.mutation<void, string>({
       query: (id) => ({

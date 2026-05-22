@@ -146,40 +146,48 @@ export default function IssuerDetail({
 
   const issuerData = useMemo(() => {
     if (!isSimulation) {
-      const iss = (data?.issuer || {}) as any;
+      const root = ((data as any)?.data ?? data ?? {}) as any;
+      const iss = (root?.issuer ?? root?.user ?? root?.onboarding ?? root ?? {}) as any;
+      
+      const header = (iss?.header ?? iss ?? {}) as any;
+      const overview = (iss?.overview ?? iss ?? {}) as any;
+      const contact = (iss?.contact ?? header?.contact ?? overview?.contact ?? {}) as any;
+      
+      const financialsSource = root?.financials ?? iss?.financials ?? overview?.financials ?? {};
+      
       return {
         id: id,
-        name: iss.name || "Unknown Issuer",
-        entityType: iss.entityType || "N/A",
-        jurisdiction: iss.jurisdiction || "N/A",
-        status: iss.status || "Pending",
-        tier: iss.tier || "Standard",
-        founded: iss.founded || "N/A",
-        contact: iss.contact || {
-          website: iss.website || "N/A",
-          email: iss.email || "",
-          phone: iss.phone || "",
+        name: header.name || iss.name || overview.name || iss.companyName || iss.fullName || iss.businessName || iss.legalName || "Unknown Issuer",
+        entityType: header.entityType || iss.entityType || overview.entityType || "N/A",
+        jurisdiction: header.jurisdiction || iss.jurisdiction || overview.jurisdiction || "N/A",
+        status: header.kybStatus || header.status || iss.status || iss.kybStatus || overview.status || "Pending",
+        tier: header.tier || iss.tier || overview.tier || "Standard",
+        founded: header.founded || iss.founded || overview.founded || "N/A",
+        contact: {
+          website: contact.website || header.website || overview.website || iss.website || "N/A",
+          email: contact.email || header.email || overview.email || iss.email || "",
+          phone: contact.phone || header.phone || overview.phone || iss.phone || "",
         },
-        description: iss.description || "No description available.",
-        bio: iss.bio || "No biography available.",
-        joined: iss.joined || "N/A",
-        location: iss.location || "Unknown Location",
-        regNumber: iss.regNumber || "N/A",
-        assets: Array.isArray(data?.assets) ? data.assets : (Array.isArray(iss.assets) ? iss.assets : []),
+        description: overview.description || overview.bio || iss.description || iss.bio || iss.companyDescription || "No description available.",
+        bio: overview.bio || overview.description || iss.bio || iss.description || iss.companyDescription || "No biography available.",
+        joined: header.joined || header.createdAt || overview.joined || overview.createdAt || iss.joined || iss.createdAt || "N/A",
+        location: header.location || overview.location || iss.location || iss.country || iss.address || "Unknown Location",
+        regNumber: header.registrationId || header.regNumber || iss.regNumber || overview.regNumber || "N/A",
+        assets: Array.isArray(root?.assets) ? root.assets : (Array.isArray(iss.assets) ? iss.assets : (Array.isArray(overview.assets) ? overview.assets : [])),
         financials: {
-          revenue: Array.isArray(data?.financials?.revenue) ? data.financials.revenue : (Array.isArray(iss.financials?.revenue) ? iss.financials.revenue : []),
-          health: Array.isArray(data?.financials?.health) ? data.financials.health : (Array.isArray(iss.financials?.health) ? iss.financials.health : []),
+          revenue: Array.isArray(financialsSource?.revenue) ? financialsSource.revenue : [],
+          health: Array.isArray(financialsSource?.health) ? financialsSource.health : [],
         },
-        compliance: Array.isArray(data?.compliance) ? data.compliance : (Array.isArray(iss.compliance) ? iss.compliance : []),
-        personnel: Array.isArray(iss.personnel) ? iss.personnel : [],
-        growthData: Array.isArray(iss.growthData) ? iss.growthData : [],
-        stats: iss.stats || {
-          totalRaised: "$0",
-          aum: "$0",
-          totalInvestors: 0,
-          avgYield: "0%",
+        compliance: Array.isArray(root?.compliance) ? root.compliance : (Array.isArray(iss.compliance) ? iss.compliance : (Array.isArray(overview.compliance) ? overview.compliance : [])),
+        personnel: Array.isArray(iss.personnel) ? iss.personnel : (Array.isArray(overview.personnel) ? overview.personnel : []),
+        growthData: Array.isArray(iss.growthData) ? iss.growthData : (Array.isArray(overview.growthData) ? overview.growthData : []),
+        stats: {
+          totalRaised: iss.stats?.totalRaised || overview.stats?.totalRaised || iss.totalRaised || overview.totalRaised || "$0",
+          aum: iss.stats?.aum || overview.stats?.aum || iss.aum || overview.aum || "$0",
+          totalInvestors: iss.stats?.totalInvestors || overview.stats?.totalInvestors || iss.totalInvestors || overview.totalInvestors || 0,
+          avgYield: iss.stats?.avgYield || overview.stats?.avgYield || iss.avgYield || overview.avgYield || "0%",
         },
-        assetSummary: iss.assetSummary || {
+        assetSummary: iss.assetSummary || overview.assetSummary || {
           active: 0,
           submitted: 0,
           approved: 0,
@@ -337,6 +345,21 @@ export default function IssuerDetail({
         </div>
       </div>
 
+      {/* Visual Debug Box to show the user and developer the exact API structure */}
+      {data && issuerData.name === "Unknown Issuer" && (
+        <div className="p-4 bg-slate-900 border border-slate-700 text-slate-200 rounded-2xl text-xs font-mono overflow-auto max-h-80 shadow-inner">
+          <p className="font-black text-amber-400 mb-2 flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping inline-block" />
+            DEBUG: API Data Structure received (Help us map this!)
+          </p>
+          <pre className="whitespace-pre-wrap">{JSON.stringify({ 
+            id, 
+            keys: Object.keys(data), 
+            dataPreview: data 
+          }, null, 2)}</pre>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="border-b border-[var(--shell-card-border)]">
         <div className="flex items-center gap-8 overflow-x-auto no-scrollbar">
@@ -401,6 +424,42 @@ export default function IssuerDetail({
                 </div>
               ))}
             </div>
+
+            {/* KYB Action Panel on Overview */}
+            {issuerData.status.toUpperCase() === "PENDING" && (
+              <div className="bg-[var(--shell-card)] p-6 md:p-8 rounded-[32px] border border-amber-500/30 shadow-sm dark:shadow-none flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent pointer-events-none" />
+                <div className="relative z-10">
+                  <h3 className="text-sm font-black text-[var(--foreground)] mb-1 flex items-center gap-2">
+                    <ShieldCheck className="text-amber-500" />
+                    Pending KYB Approval
+                  </h3>
+                  <p className="text-xs text-[var(--shell-muted)] font-bold">
+                    This issuer requires KYB verification approval before they can publish assets to the marketplace.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2.5 relative z-10">
+                  <button
+                    type="button"
+                    onClick={handleApproveKyb}
+                    disabled={isSyncing}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 transition-all shadow-md shadow-emerald-500/10 disabled:opacity-50"
+                  >
+                    <CheckCircle2 size={14} />
+                    Approve KYB
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRejectKybModalOpen(true)}
+                    disabled={isSyncing}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-500 transition-all shadow-md shadow-rose-500/10 disabled:opacity-50"
+                  >
+                    <XCircle size={14} />
+                    Reject KYB
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-8">
@@ -578,47 +637,56 @@ export default function IssuerDetail({
               </h2>
             </div>
             <div className="divide-y divide-[var(--shell-card-border)]">
-              {issuerData.assets.map((asset: any) => (
-                <div
-                  key={asset.id}
-                  className="p-8 flex items-center justify-between hover:bg-[var(--shell-subtle)] transition-colors group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-violet-100 border border-violet-200 text-violet-700 dark:bg-violet-500/20 dark:border-violet-500/35 dark:text-violet-300 flex items-center justify-center">
-                      <Building2 size={24} />
+              {issuerData.assets.map((asset: any) => {
+                const assetName = asset.name || asset.title || "Unnamed Asset";
+                const assetId = asset.id || asset.assetId || "";
+                const assetType = asset.type || asset.category || "Real Estate";
+                const assetAmount = asset.amount || asset.targetAmount || asset.raisedAmount || "N/A";
+                const assetDate = asset.date || asset.createdAt || asset.submittedAt || "N/A";
+                const assetStatus = asset.status || "Pending";
+
+                return (
+                  <div
+                    key={assetId}
+                    className="p-8 flex items-center justify-between hover:bg-[var(--shell-subtle)] transition-colors group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-violet-100 border border-violet-200 text-violet-700 dark:bg-violet-500/20 dark:border-violet-500/35 dark:text-violet-300 flex items-center justify-center">
+                        <Building2 size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black text-[var(--foreground)]">{assetName}</h3>
+                        <p className="text-[10px] font-bold text-[var(--shell-muted)] uppercase mt-0.5">
+                          {assetId} • {assetType} • {assetAmount}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-black text-[var(--foreground)]">{asset.name}</h3>
-                      <p className="text-[10px] font-bold text-[var(--shell-muted)] uppercase mt-0.5">
-                        {asset.id} • {asset.type} • {asset.amount}
-                      </p>
+                    <div className="flex items-center gap-12">
+                      <div className="text-right hidden sm:block">
+                        <p className="text-[10px] font-bold text-[var(--shell-muted)] uppercase mb-0.5">
+                          Submitted
+                        </p>
+                        <p className="text-sm font-black text-[var(--foreground)]">{assetDate}</p>
+                      </div>
+                      <div className="flex items-center gap-6">
+                        <span
+                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${
+                            assetStatus === "Active" || assetStatus === "Approved"
+                              ? "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/25"
+                              : "bg-amber-100 text-amber-900 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/25"
+                          }`}
+                        >
+                          {assetStatus}
+                        </span>
+                        <ChevronRight
+                          size={18}
+                          className="text-[var(--shell-muted)] group-hover:text-[var(--shell-active)] transition-colors"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-12">
-                    <div className="text-right hidden sm:block">
-                      <p className="text-[10px] font-bold text-[var(--shell-muted)] uppercase mb-0.5">
-                        Submitted
-                      </p>
-                      <p className="text-sm font-black text-[var(--foreground)]">{asset.date}</p>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <span
-                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${
-                          asset.status === "Active" || asset.status === "Approved"
-                            ? "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/25"
-                            : "bg-amber-100 text-amber-900 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/25"
-                        }`}
-                      >
-                        {asset.status}
-                      </span>
-                      <ChevronRight
-                        size={18}
-                        className="text-[var(--shell-muted)] group-hover:text-[var(--shell-active)] transition-colors"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
         )}
@@ -633,38 +701,51 @@ export default function IssuerDetail({
           >
             <div className="bg-[var(--shell-card)] p-8 rounded-[32px] border border-[var(--shell-card-border)] shadow-sm">
                <h2 className="text-lg font-black text-[var(--foreground)] mb-8">Revenue Breakdown</h2>
-               <div className="space-y-8">
-                  {issuerData.financials.revenue.map((item: any) => (
-                    <div key={item.label} className="space-y-3">
-                       <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-[var(--shell-muted)] uppercase ">{item.label}</span>
-                          <span className="text-sm font-black text-[var(--foreground)]">{item.value}</span>
-                       </div>
-                       <div className="h-2 w-full bg-[var(--shell-inset)] rounded-full overflow-hidden">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${item.percent}%` }}
-                            transition={{ duration: 1, ease: "easeOut" }}
-                            className="h-full bg-[var(--shell-active)] rounded-full"
-                          />
-                       </div>
-                    </div>
-                  ))}
+               <div className="space-y-6">
+                  {issuerData.financials.revenue.map((item: any, index: number) => {
+                    const label = item.label || item.name || item.title || "Revenue Metric";
+                    const value = item.value || item.amount || "$0";
+                    const percent = typeof item.percent === "number" ? item.percent : 50;
+
+                    return (
+                      <div key={label + index} className="space-y-3">
+                         <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-[var(--shell-muted)] uppercase">{label}</span>
+                            <span className="text-sm font-black text-[var(--foreground)]">{value}</span>
+                         </div>
+                         <div className="h-2 w-full bg-[var(--shell-inset)] rounded-full overflow-hidden">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${percent}%` }}
+                              transition={{ duration: 1, ease: "easeOut" }}
+                              className="h-full bg-[var(--shell-active)] rounded-full"
+                            />
+                         </div>
+                      </div>
+                    );
+                  })}
                </div>
             </div>
-
+ 
             <div className="lg:col-span-2 bg-[var(--shell-card)] p-8 rounded-[32px] border border-[var(--shell-card-border)] shadow-sm">
                <h2 className="text-lg font-black text-[var(--foreground)] mb-8">Financial Health Metrics</h2>
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {issuerData.financials.health.map((metric: any) => (
-                    <div key={metric.label} className="p-6 rounded-[24px] bg-[var(--shell-subtle)] border border-[var(--shell-card-border)]">
-                       <p className="text-[10px] font-bold text-[var(--shell-muted)] uppercase  mb-1">{metric.label}</p>
-                       <h3 className="text-xl font-black text-[var(--foreground)] mb-2">{metric.value}</h3>
-                       <span className={`text-[10px] font-black uppercase  ${metric.statusColor || "text-emerald-500"}`}>
-                          {metric.status}
-                       </span>
-                    </div>
-                  ))}
+                  {issuerData.financials.health.map((metric: any, index: number) => {
+                    const label = metric.label || metric.name || metric.title || "Health Metric";
+                    const value = metric.value || metric.score || "N/A";
+                    const status = metric.status || metric.state || "N/A";
+                    const statusColor = metric.statusColor || "text-emerald-500";
+
+                    return (
+                      <div key={label + index} className="p-6 rounded-[24px] bg-[var(--shell-subtle)] border border-[var(--shell-card-border)]">
+                         <p className="text-[10px] font-bold text-[var(--shell-muted)] uppercase mb-1">{label}</p>
+                         <h3 className="text-xl font-black text-[var(--foreground)] mb-2">{value}</h3>
+                         <span className={`text-[10px] font-black uppercase ${statusColor}`}>
+                            {status}
+                         </span>
+                      </div>
+                    );
+                  })}
                </div>
             </div>
           </motion.div>
@@ -718,33 +799,45 @@ export default function IssuerDetail({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {issuerData.compliance.map((item: any) => (
-                <div
-                  key={item.label}
-                  className="bg-[var(--shell-card)] p-8 rounded-[32px] border border-[var(--shell-card-border)] shadow-sm dark:shadow-none space-y-8"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/25 flex items-center justify-center">
-                      <ShieldCheck size={24} />
+              {issuerData.compliance.map((item: any, index: number) => {
+                const label = item.label || item.name || item.title || item.type || item.key || item.checkName || `Compliance Check ${index + 1}`;
+                const desc = item.desc || item.description || item.details || item.memo || item.comment || item.message || "Document verification check completed successfully.";
+                const date = item.date || item.updatedAt || item.createdAt || item.submittedAt || item.reviewedAt || "";
+                const status = item.status || item.kycStatus || item.kybStatus || "N/A";
+                const formattedDate = (() => {
+                  if (!date) return "N/A";
+                  const d = new Date(date);
+                  return isNaN(d.getTime()) ? date : d.toLocaleDateString();
+                })();
+
+                return (
+                  <div
+                    key={label + index}
+                    className="bg-[var(--shell-card)] p-8 rounded-[32px] border border-[var(--shell-card-border)] shadow-sm dark:shadow-none space-y-8"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/25 flex items-center justify-center">
+                        <ShieldCheck size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black text-[var(--foreground)]">{label}</h3>
+                        <p className="text-[10px] font-bold text-[var(--shell-muted)] uppercase">
+                          {desc}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-sm font-black text-[var(--foreground)]">{item.label}</h3>
-                      <p className="text-[10px] font-bold text-[var(--shell-muted)] uppercase">
-                        {item.desc}
+                    <div className="h-px w-full bg-[var(--shell-card-border)]" />
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-bold text-[var(--shell-muted)]">
+                        Last Updated: {formattedDate}
                       </p>
+                      <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/25">
+                        {status}
+                      </span>
                     </div>
                   </div>
-                  <div className="h-px w-full bg-[var(--shell-card-border)]" />
-                  <div className="flex items-center justify-between">
-                    <p className="text-[10px] font-bold text-[var(--shell-muted)]">
-                      Last Updated: {item.date}
-                    </p>
-                    <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/25">
-                      {item.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
         )}

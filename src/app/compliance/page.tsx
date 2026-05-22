@@ -84,13 +84,29 @@ const mockComplianceIssues = [
 
 export default function CompliancePage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
   const [resolveNote, setResolveNote] = useState("");
   const [isResolvingUI, setIsResolvingUI] = useState(false);
 
-  const { data, error, isLoading, refetch } = useGetComplianceInitQuery(undefined, {
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  const queryParams = useMemo(() => {
+    const params: any = {};
+    if (debouncedSearch) params.search = debouncedSearch;
+    if (selectedSeverity !== "ALL") params.severity = selectedSeverity;
+    if (selectedStatus !== "ALL") params.status = selectedStatus;
+    return params;
+  }, [debouncedSearch, selectedSeverity, selectedStatus]);
+
+  const { data, error, isLoading, refetch } = useGetComplianceInitQuery(queryParams, {
     refetchOnMountOrArgChange: true,
   });
 
@@ -107,11 +123,10 @@ export default function CompliancePage() {
   }, [data, isSimulation]);
 
   const complianceIssues = useMemo(() => {
-    const list = !isSimulation
-      ? (data?.issues || [])
-      : (data?.issues && data.issues.length > 0 ? data.issues : mockComplianceIssues);
+    if (!isSimulation) return data?.issues || [];
 
-    let filtered = list;
+    // Local fallback filter if simulated
+    let filtered = mockComplianceIssues;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -122,15 +137,12 @@ export default function CompliancePage() {
           i.id.toLowerCase().includes(q)
       );
     }
-
     if (selectedSeverity !== "ALL") {
       filtered = filtered.filter((i) => i.severity.toUpperCase() === selectedSeverity);
     }
-
     if (selectedStatus !== "ALL") {
       filtered = filtered.filter((i) => i.status.toUpperCase() === selectedStatus);
     }
-
     return filtered;
   }, [data, isSimulation, searchQuery, selectedSeverity, selectedStatus]);
 

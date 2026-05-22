@@ -131,6 +131,18 @@ function extractArray(response: any): any[] {
   return [];
 }
 
+function normalizeIssuerInitResponse(response: any): IssuerInitResponse {
+  const root = response?.data ?? response;
+  const issuer = root?.issuer ?? root ?? {};
+
+  return {
+    issuer,
+    assets: extractArray(root?.assets ?? issuer?.assets),
+    financials: root?.financials ?? issuer?.financials ?? { revenue: [], health: [] },
+    compliance: extractArray(root?.compliance ?? issuer?.compliance),
+  };
+}
+
 export const issuersApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
@@ -139,7 +151,70 @@ export const issuersApi = baseApi.injectEndpoints({
         url: "/admin/issuers",
         params: params || {},
       }),
-      transformResponse: (response: any) => extractArray(response),
+      transformResponse: (response: any) => {
+        const list = extractArray(response);
+        return list.map((item: any) => {
+          const formatUSD = (val: any) => {
+            if (val === null || val === undefined) return "$0.0M";
+            if (typeof val === "string") return val.startsWith("$") ? val : `$${val}`;
+            const num = Number(val);
+            if (isNaN(num)) return "$0.0M";
+            if (num >= 1_000_000) {
+              return `$${(num / 1_000_000).toFixed(1)}M`;
+            }
+            if (num >= 1_000) {
+              return `$${(num / 1_000).toFixed(1)}K`;
+            }
+            return `$${num.toLocaleString()}`;
+          };
+
+          // Robust raised amount extraction
+          const raisedVal = item.totalRaised !== undefined ? item.totalRaised : (item.raised !== undefined ? item.raised : (item.raisedAmount !== undefined ? item.raisedAmount : 0));
+          
+          // Robust AUM extraction
+          const aumVal = item.aum !== undefined ? item.aum : (item.totalAum !== undefined ? item.totalAum : 0);
+
+          // Robust assets count formatting
+          let assetsStr = "—";
+          if (item.assets !== undefined && item.assets !== null) {
+            if (Array.isArray(item.assets)) {
+              const active = item.assets.filter((a: any) => a.status === "Active" || a.status === "Approved").length;
+              const pending = item.assets.filter((a: any) => a.status === "Pending" || a.status === "Under Review" || a.status === "Under_Review").length;
+              assetsStr = `${active} active • ${pending} pending`;
+            } else if (typeof item.assets === "number") {
+              assetsStr = `${item.assets} active`;
+            } else {
+              assetsStr = String(item.assets);
+            }
+          } else if (item.assetsCount !== undefined) {
+            assetsStr = `${item.assetsCount} active`;
+          } else if (item.totalAssets !== undefined) {
+            assetsStr = `${item.totalAssets} active`;
+          } else if (item.assetSummary) {
+            const active = item.assetSummary.active || 0;
+            const pending = item.assetSummary.submitted || item.assetSummary.pending || 0;
+            assetsStr = `${active} active • ${pending} pending`;
+          }
+
+          // Robust status extraction
+          const status = item.kybStatusLabel || item.kybStatus || item.status || "Pending";
+
+          const name = item.name || item.companyName || item.businessName || item.legalName || "Unknown Issuer";
+          const initials = name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
+
+          return {
+            id: item.id || item.issuerId || item.userId || "",
+            name: name,
+            initials: initials,
+            email: item.email || item.contact?.email || "",
+            country: item.country || item.location || item.jurisdiction || "—",
+            assets: assetsStr,
+            raised: formatUSD(raisedVal),
+            aum: formatUSD(aumVal),
+            status: status,
+          };
+        });
+      },
       providesTags: (result) =>
         result
           ? [
@@ -168,6 +243,7 @@ export const issuersApi = baseApi.injectEndpoints({
     }),
     getIssuerInit: builder.query<IssuerInitResponse, string>({
       query: (id) => `/admin/issuers/${id}/init`,
+      transformResponse: (response: any) => normalizeIssuerInitResponse(response),
       providesTags: (result, error, id) => [
         { type: "Issuer", id },
         { type: "Issuer", id: `${id}_init` },
