@@ -15,34 +15,56 @@ export interface AssetListItem {
   amount: string;
   date: string;
   status: string;
+  assetCode?: string;
+  assetName?: string;
+  issuerName?: string;
+  assetTypeLabel?: string;
+  assetType?: string;
+  reviewStatus?: string;
+  submittedAt?: string;
 }
 
 export interface AssetDetail {
   id: string;
-  name: string;
-  issuer: string;
-  type: string;
-  valuation: string;
-  tokens: string;
-  price: string;
-  compliance: string;
-  risk: string;
-  jurisdiction: string;
-  status: string;
+  name?: string;
+  issuer?: string;
+  type?: string;
+  valuation?: string;
+  tokens?: string;
+  price?: string;
+  compliance?: string;
+  risk?: string;
+  jurisdiction?: string;
+  status?: string;
   date?: string;
+  assetCode?: string;
+  title?: string;
+  assetName?: string;
+  issuerName?: string;
+  assetTypeLabel?: string;
+  assetType?: string;
+  reviewStatus?: string;
+  totalValuation?: number;
+  targetRaise?: number;
+  projectedApy?: number | null;
+}
+
+export interface AssetComplianceCheck {
+  id?: string;
+  key?: string;
+  type?: string;
+  title?: string;
+  description?: string;
+  status?: string;
 }
 
 export interface AssetComplianceTab {
-  id: string;
-  complianceScore: number;
-  status: string;
-  details: string;
-  issues: Array<{
-    id: string;
-    type: string;
-    description: string;
-    status: string;
-  }>;
+  id?: string;
+  complianceScore?: number;
+  status?: string;
+  details?: string;
+  issues?: AssetComplianceCheck[];
+  checks?: AssetComplianceCheck[];
 }
 
 export interface AssetDocument {
@@ -55,13 +77,25 @@ export interface AssetDocument {
 }
 
 export interface AssetFinancialsTab {
-  valuation: string;
-  targetRaise: string;
-  minimumInvestment: string;
-  annualReturn: string;
-  distributionFrequency: string;
+  valuation?: string;
+  targetRaise?: string;
+  minimumInvestment?: string;
+  annualReturn?: string;
+  distributionFrequency?: string;
   performanceGraphData?: Array<{ name: string; value: number }>;
+  summary?: {
+    valuation?: { value?: number };
+    totalRevenue?: { value?: number };
+    netIncome?: { value?: number };
+    operatingExpenses?: { value?: number };
+  };
+  capitalRaisedRecent?: number;
+  currency?: string;
 }
+
+export type AssetDocumentsResponse =
+  | AssetDocument[]
+  | { data?: AssetDocument[]; documents?: AssetDocument[] };
 
 export interface AssetInitResponse {
   asset: AssetDetail;
@@ -126,7 +160,7 @@ export const assetsApi = baseApi.injectEndpoints({
       providesTags: (result, error, id) => [{ type: "Asset", id: `${id}_compliance` }],
       transformResponse: (response: any) => response?.data ?? response,
     }),
-    getAssetDocuments: builder.query<AssetDocument[], string>({
+    getAssetDocuments: builder.query<AssetDocumentsResponse, string>({
       query: (id) => `/admin/assets/${id}/documents`,
       transformResponse: (response: any) => extractArray(response),
       providesTags: (result, error, id) => [{ type: "Asset", id: `${id}_documents` }],

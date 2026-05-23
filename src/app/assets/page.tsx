@@ -20,10 +20,11 @@ import {
   useGetPendingAssetsQuery,
   useApproveAssetMutation,
   useRejectAssetMutation,
+  type AssetListItem,
 } from "@/store";
 
 // Mock fallbacks
-const mockPendingAssets = [
+const mockPendingAssets: AssetListItem[] = [
   {
     id: "AS-001",
     name: "Nairobi Tech Hub",
