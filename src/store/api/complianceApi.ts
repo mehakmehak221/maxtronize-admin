@@ -38,14 +38,15 @@ export interface ComplianceInitResponse {
 
 function extractArray(response: any): any[] {
   if (!response) return [];
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response.data)) return response.data;
-  if (Array.isArray(response.issues)) return response.issues;
-  if (Array.isArray(response.issues?.data)) return response.issues.data;
-  if (Array.isArray(response.results)) return response.results;
-  if (Array.isArray(response.list)) return response.list;
+  const root = response?.data ?? response;
+  if (Array.isArray(root)) return root;
+  if (Array.isArray(root.data)) return root.data;
+  if (Array.isArray(root.issues)) return root.issues;
+  if (Array.isArray(root.issues?.data)) return root.issues.data;
+  if (Array.isArray(root.results)) return root.results;
+  if (Array.isArray(root.list)) return root.list;
   
-  const arrays = Object.values(response).filter(Array.isArray);
+  const arrays = Object.values(root).filter(Array.isArray);
   if (arrays.length > 0) return arrays[0] as any[];
   
   return [];
@@ -106,21 +107,29 @@ function transformComplianceStats(summary: any): ComplianceSummaryStat[] {
 export const complianceApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    getComplianceInit: builder.query<ComplianceInitResponse, void>({
-      query: () => "/admin/compliance/init",
-      providesTags: ["Compliance"],
-      transformResponse: (response: any) => ({
-        stats: transformComplianceStats(response?.summary),
-        issues: extractArray(response?.issues).map(mapComplianceIssue),
+    getComplianceInit: builder.query<ComplianceInitResponse, ComplianceIssueQueryParams | void>({
+      query: (params) => ({
+        url: "/admin/compliance/init",
+        params: params || {},
       }),
+      providesTags: ["Compliance"],
+      transformResponse: (response: any) => {
+        const root = response?.data ?? response;
+        return {
+          stats: transformComplianceStats(root?.summary),
+          issues: extractArray(root?.issues).map(mapComplianceIssue),
+        };
+      },
     }),
     getComplianceIssues: builder.query<ComplianceIssue[], ComplianceIssueQueryParams | void>({
       query: (params) => ({
         url: "/admin/compliance/issues",
         params: params || {},
       }),
-      transformResponse: (response: any) =>
-        extractArray(response).map(mapComplianceIssue),
+      transformResponse: (response: any) => {
+        const root = response?.data ?? response;
+        return extractArray(root).map(mapComplianceIssue);
+      },
       providesTags: (result) =>
         result
           ? [
@@ -131,7 +140,10 @@ export const complianceApi = baseApi.injectEndpoints({
     }),
     getComplianceIssueById: builder.query<ComplianceIssue, string>({
       query: (id) => `/admin/compliance/issues/${id}`,
-      transformResponse: (response: any) => mapComplianceIssue(response),
+      transformResponse: (response: any) => {
+        const root = response?.data ?? response;
+        return mapComplianceIssue(root);
+      },
       providesTags: (result, error, id) => [{ type: "Compliance", id }],
     }),
     resolveComplianceIssue: builder.mutation<void, { id: string; note: string }>({
@@ -158,10 +170,13 @@ export const complianceApi = baseApi.injectEndpoints({
     getComplianceSummary: builder.query<ComplianceSummaryResponse, void>({
       query: () => "/admin/compliance/summary",
       providesTags: ["Compliance"],
-      transformResponse: (response: any) => ({
-        stats: transformComplianceStats(response),
-        issuesCount: response?.openIssues?.value || 0,
-      }),
+      transformResponse: (response: any) => {
+        const root = response?.data ?? response;
+        return {
+          stats: transformComplianceStats(root),
+          issuesCount: root?.openIssues?.value || 0,
+        };
+      },
     }),
   }),
 });

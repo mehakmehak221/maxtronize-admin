@@ -39,13 +39,14 @@ export interface OnboardingDetail {
 
 function extractArray(response: any): any[] {
   if (!response) return [];
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response.data)) return response.data;
-  if (Array.isArray(response.assets)) return response.assets;
-  if (Array.isArray(response.results)) return response.results;
-  if (Array.isArray(response.list)) return response.list;
+  const root = response?.data ?? response;
+  if (Array.isArray(root)) return root;
+  if (Array.isArray(root.data)) return root.data;
+  if (Array.isArray(root.assets)) return root.assets;
+  if (Array.isArray(root.results)) return root.results;
+  if (Array.isArray(root.list)) return root.list;
   
-  const arrays = Object.values(response).filter(Array.isArray);
+  const arrays = Object.values(root).filter(Array.isArray);
   if (arrays.length > 0) return arrays[0] as any[];
   
   return [];
@@ -71,6 +72,7 @@ export const onboardingApi = baseApi.injectEndpoints({
     getOnboardingById: builder.query<OnboardingDetail, string>({
       query: (id) => `/admin/onboardings/${id}`,
       providesTags: (result, error, id) => [{ type: "Asset", id }],
+      transformResponse: (response: any) => response?.data ?? response,
     }),
     approveOnboarding: builder.mutation<void, string>({
       query: (id) => ({

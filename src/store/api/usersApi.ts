@@ -44,13 +44,16 @@ export interface UsersQueryParams {
 
 function extractArray(response: any): any[] {
   if (!response) return [];
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response.data)) return response.data;
-  if (Array.isArray(response.users)) return response.users;
-  if (Array.isArray(response.results)) return response.results;
-  if (Array.isArray(response.list)) return response.list;
-  const arrays = Object.values(response).filter(Array.isArray);
+  const root = response?.data ?? response;
+  if (Array.isArray(root)) return root;
+  if (Array.isArray(root.data)) return root.data;
+  if (Array.isArray(root.users)) return root.users;
+  if (Array.isArray(root.results)) return root.results;
+  if (Array.isArray(root.list)) return root.list;
+  
+  const arrays = Object.values(root).filter(Array.isArray);
   if (arrays.length > 0) return arrays[0] as any[];
+  
   return [];
 }
 
@@ -60,10 +63,10 @@ function mapUser(item: any): UnifiedUserListItem {
     name: item.name || item.fullName || "",
     email: item.email || "",
     role: item.role || item.userType || item.type || "INVESTOR",
-    country: item.country || "",
+    country: item.location || item.country || "",
     status: item.status || "Active",
-    kycStatus: item.kycStatus,
-    kybStatus: item.kybStatus,
+    kycStatus: item.kycStatusLabel || item.kycStatus,
+    kybStatus: item.kybStatusLabel || item.kybStatus,
     joined: item.createdAt
       ? new Date(item.createdAt).toLocaleDateString()
       : item.joined || item.joinedAt || "",
@@ -94,12 +97,46 @@ export const usersApi = baseApi.injectEndpoints({
     getUserById: builder.query<UnifiedUserDetail, string>({
       query: (id) => `/admin/users/${id}`,
       providesTags: (result, error, id) => [{ type: "User", id: `user_${id}` }],
+      transformResponse: (response: any) => {
+        const root = response?.data ?? response;
+        return {
+          ...root,
+          id: root.id || root.userId || "",
+          name: root.name || root.fullName || "",
+          email: root.email || "",
+          role: root.role || root.userType || root.type || "INVESTOR",
+          country: root.location || root.country || "",
+          status: root.status || "Active",
+          kycStatus: root.kycStatusLabel || root.kycStatus,
+          kybStatus: root.kybStatusLabel || root.kybStatus,
+          joined: root.createdAt
+            ? new Date(root.createdAt).toLocaleDateString()
+            : root.joined || root.joinedAt || "",
+        };
+      }
     }),
 
     // GET /admin/user/{id} — singular variant (same endpoint, different path)
     getUserByIdSingular: builder.query<UnifiedUserDetail, string>({
       query: (id) => `/admin/user/${id}`,
       providesTags: (result, error, id) => [{ type: "User", id: `user_singular_${id}` }],
+      transformResponse: (response: any) => {
+        const root = response?.data ?? response;
+        return {
+          ...root,
+          id: root.id || root.userId || "",
+          name: root.name || root.fullName || "",
+          email: root.email || "",
+          role: root.role || root.userType || root.type || "INVESTOR",
+          country: root.location || root.country || "",
+          status: root.status || "Active",
+          kycStatus: root.kycStatusLabel || root.kycStatus,
+          kybStatus: root.kybStatusLabel || root.kybStatus,
+          joined: root.createdAt
+            ? new Date(root.createdAt).toLocaleDateString()
+            : root.joined || root.joinedAt || "",
+        };
+      }
     }),
 
     // PATCH /admin/users/{id}/activate

@@ -155,22 +155,30 @@ export const analyticsApi = baseApi.injectEndpoints({
     getAssetPerformance: builder.query<AnalyticsAssetPerformance[], void>({
       query: () => "/admin/analytics/asset-performance",
       providesTags: ["Asset"],
-      transformResponse: (response: BackendAssetPerformanceResponse) =>
-        transformAssetPerformance(response),
+      transformResponse: (response: any) => {
+        const root = response?.data ?? response;
+        return transformAssetPerformance(root);
+      },
     }),
     getAnalyticsInit: builder.query<AnalyticsInitResponse, void>({
       query: () => "/admin/analytics/init",
       providesTags: ["Asset", "User"],
-      transformResponse: (response: BackendAnalyticsInitResponse) => ({
-        kpis: transformKpis(response.kpis),
-        userGrowth: transformUserGrowth(response.userGrowth),
-        assetPerformance: transformAssetPerformance(response.assetPerformance),
-      }),
+      transformResponse: (response: any) => {
+        const root = response?.data ?? response;
+        return {
+          kpis: transformKpis(root.kpis),
+          userGrowth: transformUserGrowth(root.userGrowth),
+          assetPerformance: transformAssetPerformance(root.assetPerformance),
+        };
+      },
     }),
     getAnalyticsKpis: builder.query<AnalyticsKpi[], void>({
       query: () => "/admin/analytics/kpis",
       providesTags: ["Asset", "User"],
-      transformResponse: (response: BackendKpis) => transformKpis(response),
+      transformResponse: (response: any) => {
+        const root = response?.data ?? response;
+        return transformKpis(root);
+      },
     }),
     getUserGrowth: builder.query<UserGrowthPoint[], { months?: number } | void>({
       query: (params) => ({
@@ -178,8 +186,10 @@ export const analyticsApi = baseApi.injectEndpoints({
         params: params || {},
       }),
       providesTags: ["User"],
-      transformResponse: (response: BackendUserGrowthResponse) =>
-        transformUserGrowth(response),
+      transformResponse: (response: any) => {
+        const root = response?.data ?? response;
+        return transformUserGrowth(root);
+      },
     }),
   }),
 });

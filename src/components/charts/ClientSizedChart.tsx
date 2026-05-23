@@ -1,20 +1,22 @@
 "use client";
 
-import { useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 type Props = {
   children: ReactNode;
   className?: string;
 };
 
-const noopSubscribe = () => () => {};
-
 export function ClientSizedChart({ children, className }: Props) {
-  const mounted = useSyncExternalStore(
-    noopSubscribe,
-    () => true,
-    () => false,
-  );
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setMounted(true);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   return <div className={className}>{mounted ? children : null}</div>;
 }

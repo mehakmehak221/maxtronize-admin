@@ -21,10 +21,15 @@ import {
   Check,
 } from "lucide-react";
 import Link from "next/link";
+import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { ThemeToggleButton } from "@/components/theme/ThemeToggleButton";
 import { PageEnter } from "@/components/layout/PageEnter";
 import {
-  useGetAssetInitQuery,
+  useGetAssetByIdQuery,
+  useGetAssetOverviewQuery,
+  useGetAssetFinancialsQuery,
+  useGetAssetComplianceQuery,
+  useGetAssetDocumentsQuery,
   useApproveAssetMutation,
   useRejectAssetMutation,
 } from "@/store";
@@ -79,53 +84,89 @@ export default function AssetDetailPage({
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
-  const { data, error, isLoading, refetch } = useGetAssetInitQuery(id, {
-    refetchOnMountOrArgChange: true,
-  });
+  const { data: headerData, error: headerError, refetch: refetchHeader } = useGetAssetByIdQuery(id);
+  const { data: overviewData } = useGetAssetOverviewQuery(id);
+  const { data: financialsData } = useGetAssetFinancialsQuery(id);
+  const { data: complianceData } = useGetAssetComplianceQuery(id);
+  const { data: documentsData } = useGetAssetDocumentsQuery(id);
 
   const [approveAsset, { isLoading: isApproving }] = useApproveAssetMutation();
   const [rejectAsset, { isLoading: isRejecting }] = useRejectAssetMutation();
 
   const isSimulation = useMemo(() => {
-    return !!error || !data;
-  }, [error, data]);
+    return !!headerError || !headerData;
+  }, [headerError, headerData]);
 
   const asset = useMemo(() => {
-    if (!isSimulation && data?.asset) return data.asset;
-    if (!isSimulation) return { ...mockAsset, id, valuation: "$0", tokens: "0 MTX" };
-    return { ...mockAsset, id };
-  }, [data, id, isSimulation]);
+    if (headerData || overviewData) {
+      return {
+        id: headerData?.assetCode || headerData?.id || id,
+        name: headerData?.title || headerData?.assetName || headerData?.name || overviewData?.title || overviewData?.assetName || overviewData?.name || "Unknown Asset",
+        issuer: headerData?.issuerName || headerData?.issuer || overviewData?.issuerName || overviewData?.issuer || "Unknown Issuer",
+        type: headerData?.assetTypeLabel || headerData?.assetType || headerData?.type || overviewData?.assetTypeLabel || "Unknown Type",
+        status: headerData?.reviewStatus || headerData?.status || "Unknown Status",
+        jurisdiction: overviewData?.location || overviewData?.jurisdiction || headerData?.jurisdiction || "N/A",
+        valuation: overviewData?.totalValuation !== undefined ? `$${overviewData.totalValuation}` : headerData?.totalValuation !== undefined ? `$${headerData.totalValuation}` : overviewData?.valuation || headerData?.valuation || "N/A",
+        tokens: overviewData?.tokenomics?.totalSupply !== undefined ? `${overviewData.tokenomics.totalSupply} MTX` : overviewData?.totalTokens !== undefined ? `${overviewData.totalTokens} MTX` : overviewData?.tokens || headerData?.tokens || "N/A",
+        price: overviewData?.tokenomics?.pricePerToken !== undefined ? `$${overviewData.tokenomics.pricePerToken}` : overviewData?.price || headerData?.price || "N/A",
+        compliance: overviewData?.complianceStatus || headerData?.compliance || "N/A",
+        risk: overviewData?.riskProfile || headerData?.risk || "N/A",
+      };
+    }
+    return { id, name: "Loading...", issuer: "", type: "", status: "", jurisdiction: "", valuation: "", tokens: "", price: "", compliance: "", risk: "" };
+  }, [headerData, overviewData, id]);
 
   const financials = useMemo(() => {
-    if (!isSimulation) {
-      return data?.financials || {
-        valuation: "$0",
-        targetRaise: "$0",
-        minimumInvestment: "$0",
-        annualReturn: "0%",
-        distributionFrequency: "N/A",
+    if (financialsData || headerData) {
+      const summaryValuation = financialsData?.summary?.valuation?.value;
+      const totalRevenue = financialsData?.summary?.totalRevenue?.value;
+      const netIncome = financialsData?.summary?.netIncome?.value;
+      const operatingExpenses = financialsData?.summary?.operatingExpenses?.value;
+      const capitalRaisedRecent = financialsData?.capitalRaisedRecent;
+      const currency = financialsData?.currency || "USD";
+      
+      return {
+        valuation: summaryValuation !== undefined ? `${summaryValuation} ${currency}` : (headerData?.totalValuation !== undefined ? `$${headerData.totalValuation}` : "N/A"),
+        targetRaise: headerData?.targetRaise !== undefined ? `$${headerData.targetRaise}` : "N/A",
+        projectedApy: headerData?.projectedApy !== undefined && headerData?.projectedApy !== null ? `${headerData.projectedApy}%` : "N/A",
+        totalRevenue: totalRevenue !== undefined ? `${totalRevenue} ${currency}` : "N/A",
+        netIncome: netIncome !== undefined ? `${netIncome} ${currency}` : "N/A",
+        operatingExpenses: operatingExpenses !== undefined ? `${operatingExpenses} ${currency}` : "N/A",
+        capitalRaisedRecent: capitalRaisedRecent !== undefined ? `${capitalRaisedRecent} ${currency}` : "N/A",
       };
     }
-    return mockFinancials;
-  }, [data, isSimulation]);
+    return { valuation: "N/A", targetRaise: "N/A", projectedApy: "N/A", totalRevenue: "N/A", netIncome: "N/A", operatingExpenses: "N/A", capitalRaisedRecent: "N/A" };
+  }, [financialsData, headerData]);
 
   const compliance = useMemo(() => {
-    if (!isSimulation) {
-      return data?.compliance || {
-        id: "C-000",
-        complianceScore: 0,
-        status: "Pending",
-        details: "No compliance data available.",
-        issues: [],
+    if (complianceData) {
+      const issues = (complianceData.checks || complianceData.issues || []).map((check: any) => ({
+        id: check.key || check.id || Math.random().toString(),
+        type: check.title || check.type || "Check",
+        description: check.description || "No description",
+        status: check.status || "Pending",
+      }));
+      
+      const passedChecks = issues.filter((i: any) => i.status?.toLowerCase() === "passed" || i.status?.toLowerCase() === "verified");
+      const score = complianceData.complianceScore !== undefined ? complianceData.complianceScore : (issues.length > 0 ? Math.round((passedChecks.length / issues.length) * 100) : 0);
+
+      return {
+        id: complianceData.id || "C-000",
+        complianceScore: score,
+        status: complianceData.status || "Pending",
+        details: complianceData.details || "Compliance checks completed.",
+        issues: issues,
       };
     }
-    return mockCompliance;
-  }, [data, isSimulation]);
+    return { id: "C-000", complianceScore: 0, status: "Pending", details: "No compliance data available.", issues: [] };
+  }, [complianceData]);
 
   const documents = useMemo(() => {
-    if (!isSimulation) return data?.documents || [];
-    return mockDocuments;
-  }, [data, isSimulation]);
+    if (documentsData && Array.isArray(documentsData)) return documentsData;
+    if (documentsData?.data && Array.isArray(documentsData.data)) return documentsData.data;
+    if (documentsData?.documents && Array.isArray(documentsData.documents)) return documentsData.documents;
+    return [];
+  }, [documentsData]);
 
   const handleApprove = async () => {
     const confirmed = confirm(`Are you sure you want to approve this asset offering: "${asset.name}"?`);
@@ -156,6 +197,31 @@ export default function AssetDetailPage({
       setRejectReason("");
     } catch (err: any) {
       alert(`Rejection failed: ${err?.data?.message || err.message || "Unknown error"}`);
+    }
+  };
+
+  const handleExportReport = () => {
+    try {
+      const reportData = {
+        assetDetails: asset,
+        financials: financials,
+        compliance: compliance,
+        tokenomics: overviewData?.tokenomics || {},
+        projectedRevenue: overviewData?.projectedRevenue || {},
+        documents: documents,
+      };
+      const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `asset_report_${asset.id || "export"}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export failed", error);
+      alert("Failed to export the report.");
     }
   };
 
@@ -213,7 +279,7 @@ export default function AssetDetailPage({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => refetch()}
+            onClick={handleExportReport}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--shell-card-border)] bg-transparent text-[var(--foreground)] font-bold text-sm hover:bg-[var(--shell-subtle)] transition-all"
           >
             <Download size={18} />
@@ -303,13 +369,56 @@ export default function AssetDetailPage({
                       </button>
                     </div>
                   </div>
-                  <div className="h-[250px] md:h-[350px] w-full bg-[var(--shell-inset)] rounded-[24px] flex items-center justify-center border border-dashed border-[var(--shell-card-border)]">
-                    <div className="text-center">
-                      <TrendingUp className="text-[var(--shell-muted)] w-12 md:w-16 h-12 md:h-16 mx-auto mb-4 opacity-40" />
-                      <p className="text-xs md:text-sm font-bold text-[var(--shell-muted)]">
-                        Token Performance Graph
-                      </p>
-                    </div>
+                  <div className="h-[250px] md:h-[350px] w-full bg-[var(--shell-inset)] rounded-[24px] flex items-center justify-center border border-solid border-[var(--shell-card-border)] overflow-hidden relative">
+                    {overviewData?.projectedRevenue?.series?.length > 0 ? (
+                      <div className="absolute inset-0 p-4 md:p-6 pb-2">
+                        <p className="text-xs font-black text-[var(--shell-muted)] uppercase absolute top-4 left-6 z-10">Projected Revenue</p>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={overviewData.projectedRevenue.series} margin={{ top: 40, right: 0, left: 0, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <XAxis 
+                              dataKey="month" 
+                              axisLine={false} 
+                              tickLine={false} 
+                              tick={{ fontSize: 10, fill: "var(--shell-muted)", fontWeight: "bold" }}
+                              dy={10}
+                            />
+                            <Tooltip
+                              contentStyle={{ 
+                                backgroundColor: "var(--shell-card)", 
+                                borderRadius: "12px", 
+                                border: "1px solid var(--shell-card-border)",
+                                fontSize: "12px",
+                                fontWeight: "bold",
+                                color: "var(--foreground)"
+                              }}
+                              itemStyle={{ color: "#10b981" }}
+                              formatter={(value: any) => [`$${value.toLocaleString()}`, "Revenue"]}
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="revenue" 
+                              stroke="#10b981" 
+                              strokeWidth={3}
+                              fillOpacity={1} 
+                              fill="url(#colorRevenue)" 
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <TrendingUp className="text-[var(--shell-muted)] w-12 md:w-16 h-12 md:h-16 mx-auto mb-4 opacity-40" />
+                        <p className="text-xs md:text-sm font-bold text-[var(--shell-muted)]">
+                          Token Performance Graph
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -322,7 +431,7 @@ export default function AssetDetailPage({
                       COMPLIANCE STATUS
                     </h4>
                     <p className="text-xl md:text-2xl font-black text-[var(--foreground)]">
-                      {asset.compliance}
+                      {compliance.status !== "Pending" ? compliance.status : (compliance.complianceScore >= 80 ? "Compliant" : compliance.complianceScore > 0 ? "Needs Review" : "Pending")}
                     </p>
                   </div>
                   <div className="bg-[var(--shell-card)] p-6 md:p-8 rounded-[24px] md:rounded-[32px] border border-[var(--shell-card-border)] shadow-sm dark:shadow-none">
@@ -369,9 +478,34 @@ export default function AssetDetailPage({
                         {asset.jurisdiction}
                       </p>
                     </div>
+                    <div className="pt-6 border-t border-[var(--shell-card-border)]">
+                      <p className="text-[10px] font-black text-[var(--shell-muted)] uppercase mb-2">
+                        Price Per Token
+                      </p>
+                      <p className="text-lg md:text-xl font-black text-[var(--foreground)]">
+                        {overviewData?.tokenomics?.pricePerToken !== undefined ? `$${overviewData.tokenomics.pricePerToken}` : "N/A"}
+                      </p>
+                    </div>
+                    <div className="pt-6 border-t border-[var(--shell-card-border)]">
+                      <p className="text-[10px] font-black text-[var(--shell-muted)] uppercase mb-2">
+                        Minimum Investment
+                      </p>
+                      <p className="text-lg md:text-xl font-black text-[var(--foreground)]">
+                        {overviewData?.tokenomics?.minInvestment !== undefined ? `$${overviewData.tokenomics.minInvestment}` : "N/A"}
+                      </p>
+                    </div>
+                    <div className="pt-6 border-t border-[var(--shell-card-border)]">
+                      <p className="text-[10px] font-black text-[var(--shell-muted)] uppercase mb-2">
+                        Lockup Period
+                      </p>
+                      <p className="text-lg md:text-xl font-black text-[var(--foreground)]">
+                        {overviewData?.tokenomics?.lockupPeriod || "N/A"}
+                      </p>
+                    </div>
                     <button
                       type="button"
-                      className="w-full py-4 rounded-2xl bg-[var(--shell-active)] text-white font-black text-sm shadow-lg shadow-[var(--shell-active)]/25 flex items-center justify-center gap-3 mt-4"
+                      onClick={handleExportReport}
+                      className="w-full py-4 rounded-2xl bg-[var(--shell-active)] text-white font-black text-sm shadow-lg shadow-[var(--shell-active)]/25 flex items-center justify-center gap-3 mt-4 hover:opacity-90 transition-opacity"
                     >
                       <Download size={18} />
                       Download Report
@@ -415,9 +549,11 @@ export default function AssetDetailPage({
                 {[
                   { label: "Asset Valuation", value: financials.valuation },
                   { label: "Target Offering Raise", value: financials.targetRaise },
-                  { label: "Minimum Investment Size", value: financials.minimumInvestment },
-                  { label: "Projected Annual Return (IRR)", value: financials.annualReturn, highlight: true },
-                  { label: "Dividend Distribution Frequency", value: financials.distributionFrequency },
+                  { label: "Projected APY", value: financials.projectedApy, highlight: true },
+                  { label: "Total Revenue", value: financials.totalRevenue },
+                  { label: "Net Income", value: financials.netIncome },
+                  { label: "Operating Expenses", value: financials.operatingExpenses },
+                  { label: "Recent Capital Raised", value: financials.capitalRaisedRecent },
                 ].map((item, i) => (
                   <div
                     key={item.label}

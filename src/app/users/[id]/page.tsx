@@ -50,6 +50,9 @@ import {
   useApproveInvestorKycMutation,
   useRejectInvestorKycMutation,
   useSetInvestorKycUnderReviewMutation,
+  useApproveInvestorComplianceMutation,
+  useRejectInvestorComplianceMutation,
+  useSetInvestorComplianceUnderReviewMutation,
 } from "@/store";
 
 // High fidelity mock fallbacks
@@ -108,6 +111,32 @@ const mockInvestorData = {
   ],
 };
 
+const getStatusBadgeStyles = (status: string) => {
+  const s = (status || "").toUpperCase();
+  if (s.includes("VERIFIED") || s.includes("PASS") || s.includes("CLEAR") || s.includes("ACTIVE") || s.includes("COMPLETE")) {
+    return {
+      bg: "bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/25",
+      dot: "bg-emerald-500 dark:bg-emerald-400"
+    };
+  }
+  if (s.includes("PENDING") || s.includes("REVIEW") || s.includes("PROCESS")) {
+    return {
+      bg: "bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/25",
+      dot: "bg-amber-500 dark:bg-amber-400"
+    };
+  }
+  if (s.includes("REJECT") || s.includes("FAIL") || s.includes("SUSPEND") || s.includes("INACTIVE")) {
+    return {
+      bg: "bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/25",
+      dot: "bg-rose-500 dark:bg-rose-400"
+    };
+  }
+  return {
+    bg: "bg-slate-100 text-slate-800 border border-slate-200 dark:bg-white/10 dark:text-slate-300 dark:border-white/15",
+    dot: "bg-slate-500 dark:bg-slate-400"
+  };
+};
+
 export default function UserDetails({
   params,
 }: {
@@ -115,8 +144,18 @@ export default function UserDetails({
 }) {
   const { id } = use(params);
   const [activeTab, setActiveTab] = useState("Overview");
-  const [rejectKycModalOpen, setRejectKycModalOpen] = useState(false);
-  const [rejectKycReason, setRejectKycReason] = useState("");
+  
+  const [rejectModalCheck, setRejectModalCheck] = useState<{ key: string; label: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  
+  const rejectKycModalOpen = rejectModalCheck !== null;
+  const setRejectKycModalOpen = (open: boolean) => {
+    if (!open) setRejectModalCheck(null);
+    else setRejectModalCheck({ key: "kyc", label: "KYC Verification" });
+  };
+  const rejectKycReason = rejectReason;
+  const setRejectKycReason = setRejectReason;
+
   const tabs = ["Overview", "Investments", "Transactions", "Compliance"];
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -127,9 +166,14 @@ export default function UserDetails({
 
   const [activateInvestor, { isLoading: isActivating }] = useActivateInvestorMutation();
   const [suspendInvestor, { isLoading: isSuspending }] = useSuspendInvestorMutation();
+  
   const [approveKyc, { isLoading: isApprovingKyc }] = useApproveInvestorKycMutation();
   const [rejectKyc, { isLoading: isRejectingKyc }] = useRejectInvestorKycMutation();
   const [setUnderReview, { isLoading: isSettingUnderReview }] = useSetInvestorKycUnderReviewMutation();
+
+  const [approveCompliance, { isLoading: isApprovingCompliance }] = useApproveInvestorComplianceMutation();
+  const [rejectCompliance, { isLoading: isRejectingCompliance }] = useRejectInvestorComplianceMutation();
+  const [setComplianceUnderReview, { isLoading: isSettingComplianceUnderReview }] = useSetInvestorComplianceUnderReviewMutation();
 
   const isSimulation = useMemo(() => {
     return !!error || !data;
@@ -150,6 +194,7 @@ export default function UserDetails({
         tier: inv.tier || "Standard",
         status: inv.status || "Pending",
         bio: inv.bio || "No biography available.",
+        isAccredited: inv.isAccredited ?? false,
         investments: Array.isArray(data?.investments) ? data.investments : (Array.isArray(inv.investments) ? inv.investments : []),
         compliance: Array.isArray(data?.compliance) ? data.compliance : (Array.isArray(inv.compliance) ? inv.compliance : []),
         transactions: Array.isArray(inv.transactions) ? inv.transactions : [],
@@ -171,7 +216,7 @@ export default function UserDetails({
         },
       };
     }
-    return { ...mockInvestorData, id };
+    return { ...mockInvestorData, isAccredited: true, id };
   }, [data, id, isSimulation]);
 
   const isSuspended = useMemo(() => {
@@ -201,57 +246,62 @@ export default function UserDetails({
     }
   };
 
-  const handleApproveKyc = async () => {
-    const confirmed = confirm(`Are you sure you want to APPROVE the KYC status for: "${investorData.name}"?`);
+  const handleApproveCompliance = async (key: string, label: string) => {
+    const confirmed = confirm(`Are you sure you want to APPROVE the ${label} status for: "${investorData.name}"?`);
     if (!confirmed) return;
     try {
       if (isSimulation) {
-        alert(`[Simulation] Approved KYC for: ${investorData.name}`);
+        alert(`[Simulation] Approved ${label} for: ${investorData.name}`);
       } else {
-        await approveKyc(id).unwrap();
-        alert(`Successfully approved KYC clearance for: ${investorData.name}`);
+        await approveCompliance({ id, key }).unwrap();
+        alert(`Successfully approved ${label} clearance for: ${investorData.name}`);
       }
       refetch();
     } catch (err: any) {
-      alert(`KYC approval failed: ${err?.data?.message || err.message || "Unknown error"}`);
+      alert(`${label} approval failed: ${err?.data?.message || err.message || "Unknown error"}`);
     }
   };
 
-  const handleSetUnderReview = async () => {
-    const confirmed = confirm(`Are you sure you want to set the KYC status to "Under Review" for: "${investorData.name}"?`);
+  const handleSetComplianceUnderReview = async (key: string, label: string) => {
+    const confirmed = confirm(`Are you sure you want to set the ${label} status to "Under Review" for: "${investorData.name}"?`);
     if (!confirmed) return;
     try {
       if (isSimulation) {
-        alert(`[Simulation] Set KYC to Under Review for: ${investorData.name}`);
+        alert(`[Simulation] Set ${label} to Under Review for: ${investorData.name}`);
       } else {
-        await setUnderReview(id).unwrap();
-        alert(`Successfully set KYC to Under Review for: ${investorData.name}`);
+        await setComplianceUnderReview({ id, key }).unwrap();
+        alert(`Successfully set ${label} to Under Review for: ${investorData.name}`);
       }
       refetch();
     } catch (err: any) {
-      alert(`KYC operation failed: ${err?.data?.message || err.message || "Unknown error"}`);
+      alert(`${label} operation failed: ${err?.data?.message || err.message || "Unknown error"}`);
     }
   };
 
-  const handleRejectKycSubmit = async (e: React.FormEvent) => {
+  const handleRejectComplianceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!rejectKycReason.trim()) return;
+    if (!rejectModalCheck || !rejectReason.trim()) return;
+    const { key, label } = rejectModalCheck;
     try {
       if (isSimulation) {
-        alert(`[Simulation] Rejected KYC for: ${investorData.name} due to: "${rejectKycReason}"`);
+        alert(`[Simulation] Rejected ${label} for: ${investorData.name} due to: "${rejectReason}"`);
       } else {
-        await rejectKyc({ id, reason: rejectKycReason }).unwrap();
-        alert(`Successfully rejected KYC for: ${investorData.name}`);
+        await rejectCompliance({ id, key, reason: rejectReason }).unwrap();
+        alert(`Successfully rejected ${label} for: ${investorData.name}`);
       }
-      setRejectKycModalOpen(false);
-      setRejectKycReason("");
+      setRejectModalCheck(null);
+      setRejectReason("");
       refetch();
     } catch (err: any) {
-      alert(`KYC rejection failed: ${err?.data?.message || err.message || "Unknown error"}`);
+      alert(`${label} rejection failed: ${err?.data?.message || err.message || "Unknown error"}`);
     }
   };
 
-  const isSyncing = isLoading || isActivating || isSuspending || isApprovingKyc || isRejectingKyc || isSettingUnderReview;
+  const handleApproveKyc = () => handleApproveCompliance("kyc", "KYC Verification");
+  const handleSetUnderReview = () => handleSetComplianceUnderReview("kyc", "KYC Verification");
+  const handleRejectKycSubmit = handleRejectComplianceSubmit;
+
+  const isSyncing = isLoading || isActivating || isSuspending || isApprovingKyc || isRejectingKyc || isSettingUnderReview || isApprovingCompliance || isRejectingCompliance || isSettingComplianceUnderReview;
 
   return (
     <PageEnter className="p-4 md:p-8 space-y-8 min-h-screen pb-20">
@@ -281,10 +331,12 @@ export default function UserDetails({
                   <MapPin size={14} className="inline mr-1" /> {investorData.country}
                 </p>
                 <span className="text-[var(--shell-card-border)] hidden sm:inline">•</span>
-                <p className="text-sm font-bold text-[var(--shell-muted)]">Accredited Investor</p>
+                <p className="text-sm font-bold text-[var(--shell-muted)]">
+                  {investorData.isAccredited ? "Accredited Investor" : "Retail Investor"}
+                </p>
                 <span className="text-[var(--shell-card-border)] hidden sm:inline">•</span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/25">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" aria-hidden />
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${getStatusBadgeStyles(investorData.status).bg}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${getStatusBadgeStyles(investorData.status).dot}`} aria-hidden />
                   {investorData.status}
                 </span>
               </div>
@@ -715,84 +767,177 @@ export default function UserDetails({
             exit={{ opacity: 0, y: -10 }}
             className="space-y-6"
           >
-            {/* Direct AML / KYC Clearance Interventions */}
-            <div className="bg-[var(--shell-card)] p-6 md:p-8 rounded-[32px] border border-[var(--shell-card-border)] shadow-sm dark:shadow-none flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div>
-                <h3 className="text-sm font-black text-[var(--foreground)] mb-1 flex items-center gap-2">
-                  <ShieldCheck className="text-emerald-500" />
-                  Regulatory interventions
-                </h3>
-                <p className="text-xs text-[var(--shell-muted)] font-bold">
-                  Approve, suspend, or investigate investor's KYC status on the cryptographic ledger.
-                </p>
+            {/* Compliance Status Overview */}
+            {investorData.compliance.length > 0 && (
+              <div className="bg-[var(--shell-card)] rounded-[32px] border border-[var(--shell-card-border)] shadow-sm overflow-hidden mb-6">
+                <div className="p-8 border-b border-[var(--shell-card-border)]">
+                  <h2 className="text-lg font-black text-[var(--foreground)]">Compliance Checks</h2>
+                </div>
+                <div className="divide-y divide-[var(--shell-card-border)]">
+                  {investorData.compliance.map((item: any, i: number) => (
+                    <div key={i} className="p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-[var(--shell-subtle)] transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-100 border border-indigo-200 text-indigo-700 dark:bg-indigo-500/20 dark:border-indigo-500/35 dark:text-indigo-300 flex items-center justify-center shrink-0">
+                          <ShieldCheck size={24} />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black text-[var(--foreground)]">{item.label}</h3>
+                          <p className="text-xs font-bold text-[var(--shell-muted)] mt-1">{item.desc}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between md:justify-end gap-6 w-full md:w-auto">
+                        <div className="text-left md:text-right">
+                          <p className="text-[10px] font-bold text-[var(--shell-muted)] uppercase mb-1">
+                            Last Updated
+                          </p>
+                          <p className="text-xs font-black text-[var(--foreground)]">{item.date}</p>
+                        </div>
+                        <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase ${getStatusBadgeStyles(item.status).bg}`}>
+                          {item.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={handleApproveKyc}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 transition-all shadow-md shadow-emerald-500/10"
-                >
-                  <CheckCircle2 size={14} />
-                  Approve KYC
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSetUnderReview}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-500 transition-all shadow-md shadow-amber-500/10"
-                >
-                  <RefreshCw size={14} />
-                  KYC Under Review
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRejectKycModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-500 transition-all shadow-md shadow-rose-500/10"
-                >
-                  <XCircle size={14} />
-                  Reject KYC
-                </button>
+            )}
+
+            {/* Dynamic Compliance Interventions */}
+            {investorData.compliance.filter((item: any) => item.canApprove && item.key).map((item: any) => (
+              <div
+                key={`intervention-${item.key}`}
+                className="bg-[var(--shell-card)] p-6 md:p-8 rounded-[32px] border border-[var(--shell-card-border)] shadow-sm dark:shadow-none flex flex-col md:flex-row md:items-center justify-between gap-6"
+              >
+                <div>
+                  <h3 className="text-sm font-black text-[var(--foreground)] mb-1 flex items-center gap-2">
+                    <ShieldCheck className="text-emerald-500" />
+                    Regulatory intervention: {item.label}
+                  </h3>
+                  <p className="text-xs text-[var(--shell-muted)] font-bold">
+                    Approve, investigate, or reject investor's "{item.label}" status. Currently: {item.status}.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleApproveCompliance(item.key, item.label)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 transition-all shadow-md shadow-emerald-500/10"
+                  >
+                    <CheckCircle2 size={14} />
+                    Approve {item.label}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetComplianceUnderReview(item.key, item.label)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-500 transition-all shadow-md shadow-amber-500/10"
+                  >
+                    <RefreshCw size={14} />
+                    Set Under Review
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRejectModalCheck({ key: item.key, label: item.label })}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-500 transition-all shadow-md shadow-rose-500/10"
+                  >
+                    <XCircle size={14} />
+                    Reject {item.label}
+                  </button>
+                </div>
               </div>
-            </div>
+            ))}
+
+            {/* Direct AML / KYC Clearance Interventions (Simulation Fallback) */}
+            {investorData.compliance.filter((item: any) => item.canApprove && item.key).length === 0 && (
+              <div className="bg-[var(--shell-card)] p-6 md:p-8 rounded-[32px] border border-[var(--shell-card-border)] shadow-sm dark:shadow-none flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                  <h3 className="text-sm font-black text-[var(--foreground)] mb-1 flex items-center gap-2">
+                    <ShieldCheck className="text-emerald-500" />
+                    Regulatory interventions (Simulation)
+                  </h3>
+                  <p className="text-xs text-[var(--shell-muted)] font-bold">
+                    Approve, suspend, or investigate investor's KYC status on the cryptographic ledger.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={handleApproveKyc}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 transition-all shadow-md shadow-emerald-500/10"
+                  >
+                    <CheckCircle2 size={14} />
+                    Approve KYC
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSetUnderReview}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-500 transition-all shadow-md shadow-amber-500/10"
+                  >
+                    <RefreshCw size={14} />
+                    KYC Under Review
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRejectKycModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-xs hover:bg-rose-500 transition-all shadow-md shadow-rose-500/10"
+                  >
+                    <XCircle size={14} />
+                    Reject KYC
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {investorData.compliance.map((item: any) => (
-                <div
-                  key={item.label}
-                  className="bg-[var(--shell-card)] p-6 rounded-[32px] border border-[var(--shell-card-border)] shadow-sm dark:shadow-none group"
-                >
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="w-12 h-12 rounded-2xl border border-emerald-200/80 dark:border-emerald-500/25 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 flex items-center justify-center">
-                      <ShieldCheck size={24} />
+              {investorData.compliance.map((item: any) => {
+                const styles = getStatusBadgeStyles(item.status);
+                const isPassed = item.status.toUpperCase().includes("VERIFIED") || item.status.toUpperCase().includes("PASS") || item.status.toUpperCase().includes("CLEAR") || item.status.toUpperCase().includes("COMPLETE");
+                const isFailed = item.status.toUpperCase().includes("REJECT") || item.status.toUpperCase().includes("FAIL");
+                const Icon = isPassed ? ShieldCheck : (isFailed ? ShieldAlert : AlertTriangle);
+                const iconColorClass = isPassed
+                  ? "text-emerald-500 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-500/25 bg-emerald-50 dark:bg-emerald-500/15"
+                  : isFailed
+                  ? "text-rose-500 dark:text-rose-400 border border-rose-200/80 dark:border-rose-500/25 bg-rose-50 dark:bg-rose-500/15"
+                  : "text-amber-500 dark:text-amber-400 border border-amber-200/80 dark:border-amber-500/25 bg-amber-50 dark:bg-amber-500/15";
+
+                return (
+                  <div
+                    key={item.label}
+                    className="bg-[var(--shell-card)] p-6 rounded-[32px] border border-[var(--shell-card-border)] shadow-sm dark:shadow-none group"
+                  >
+                    <div className="flex items-center justify-between mb-6">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${iconColorClass}`}>
+                        <Icon size={24} />
+                      </div>
+                    </div>
+                    <div className="pb-6 border-b border-[var(--shell-card-border)] mb-6">
+                      <h3 className="text-sm font-black text-[var(--foreground)]">{item.label}</h3>
+                      <p className="text-xs text-[var(--shell-muted)] font-bold mt-1">{item.desc}</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-[var(--shell-muted)] uppercase">
+                        Last Updated: {item.date}
+                      </span>
+                      <span className={`px-4 py-1.5 rounded-full text-[11px] font-black uppercase ${styles.bg}`}>
+                        {item.status}
+                      </span>
                     </div>
                   </div>
-                  <div className="pb-6 border-b border-[var(--shell-card-border)] mb-6">
-                    <h3 className="text-sm font-black text-[var(--foreground)]">{item.label}</h3>
-                    <p className="text-xs text-[var(--shell-muted)] font-bold mt-1">{item.desc}</p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-[var(--shell-muted)] uppercase">
-                      Last Updated: {item.date}
-                    </span>
-                    <span className="px-4 py-1.5 rounded-full text-[11px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/25">
-                      {item.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* KYC Rejection Reason Modal */}
+      {/* KYC/Compliance Rejection Reason Modal */}
       <AnimatePresence>
-        {rejectKycModalOpen && (
+        {rejectModalCheck !== null && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setRejectKycModalOpen(false)}
+              onClick={() => setRejectModalCheck(null)}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
             <motion.div
@@ -803,28 +948,28 @@ export default function UserDetails({
             >
               <button
                 type="button"
-                onClick={() => setRejectKycModalOpen(false)}
+                onClick={() => setRejectModalCheck(null)}
                 className="absolute right-6 top-6 text-slate-500 hover:text-slate-300"
               >
                 <X size={20} />
               </button>
               <h3 className="text-lg font-black text-[var(--foreground)] mb-2 flex items-center gap-2">
                 <AlertTriangle className="text-rose-500" />
-                Reject Investor KYC
+                Reject {rejectModalCheck.label}
               </h3>
               <p className="text-xs text-[var(--shell-muted)] font-bold mb-6">
-                Please specify the reason for rejecting "{investorData.name}"'s identity verification.
+                Please specify the reason for rejecting "{investorData.name}"'s {rejectModalCheck.label.toLowerCase()} check.
               </p>
-              <form onSubmit={handleRejectKycSubmit} className="space-y-5">
+              <form onSubmit={handleRejectComplianceSubmit} className="space-y-5">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase">
                     Rejection Reason
                   </label>
                   <textarea
                     required
-                    value={rejectKycReason}
-                    onChange={(e) => setRejectKycReason(e.target.value)}
-                    placeholder="e.g. Identity document is unclear or expired."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder={`e.g. ${rejectModalCheck.label} verification document is unclear or expired.`}
                     rows={4}
                     className="w-full px-4 py-3 rounded-xl border border-[var(--shell-card-border)] bg-[var(--shell-inset)] text-[var(--foreground)] placeholder:text-slate-600 focus:outline-none focus:border-rose-500 transition-colors text-sm font-medium"
                   />
@@ -832,7 +977,7 @@ export default function UserDetails({
                 <div className="flex gap-3 justify-end pt-2">
                   <button
                     type="button"
-                    onClick={() => setRejectKycModalOpen(false)}
+                    onClick={() => setRejectModalCheck(null)}
                     className="px-4 py-2.5 rounded-xl border border-[var(--shell-card-border)] text-sm font-bold hover:bg-[var(--shell-subtle)] text-[var(--foreground)]"
                   >
                     Cancel

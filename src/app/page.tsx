@@ -70,10 +70,10 @@ const mockRevenueData = [
 ];
 
 const mockDonutData = [
-  { name: "Real Estate", value: 21.0, color: "#7C3AED" },
-  { name: "Private Credit", value: 8.5, color: "#6D28D9" },
-  { name: "Commodities", value: 6.2, color: "#A78BFA" },
-  { name: "Infrastructure", value: 4.3, color: "#C4B5FD" },
+  { name: "Real Estate", value: 21000000, color: "#7C3AED" },
+  { name: "Private Credit", value: 8500000, color: "#6D28D9" },
+  { name: "Commodities", value: 6200000, color: "#A78BFA" },
+  { name: "Infrastructure", value: 4300000, color: "#C4B5FD" },
 ];
 
 export default function Dashboard() {
@@ -313,7 +313,7 @@ export default function Dashboard() {
               AUM by Asset Type
             </h2>
             <p className="text-[11px] md:text-sm text-[var(--shell-muted)] font-bold">
-              Total $42.0M tokenized
+              Total {data?.totalTokenized || "$40.0M"} tokenized
             </p>
           </div>
 
@@ -351,7 +351,7 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <span className="text-sm md:text-base font-black text-[var(--foreground)] shrink-0">
-                  ${item.value}M
+                  {item.value >= 1000000 ? `$${(item.value / 1000000).toFixed(1)}M` : `$${item.value.toLocaleString()}`}
                 </span>
               </div>
             ))}

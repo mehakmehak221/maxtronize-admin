@@ -23,9 +23,10 @@ const menuItems = [
   { icon: CheckSquare, label: 'Asset Approvals', href: '/assets', badge: '4' },
   { icon: Users, label: 'Users', href: '/users', badge: '2' },
   { icon: Building2, label: 'Issuers', href: '/issuers' },
+  { icon: FileText, label: 'Onboardings', href: '/onboardings' },
   { icon: ShieldCheck, label: 'Admin RBAC', href: '/rbac' },
   { icon: ArrowLeftRight, label: 'Transactions', href: '/transactions' },
-  { icon: FileText, label: 'Compliance', href: '/compliance' },
+  { icon: ShieldCheck, label: 'Compliance', href: '/compliance' },
   { icon: PieChart, label: 'Analytics', href: '/analytics' },
 ];
 

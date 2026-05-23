@@ -41,6 +41,7 @@ export interface DashboardInitResponse {
   revenueData: RevenuePoint[];
   donutData: AumAssetType[];
   alerts: AmlAlert[];
+  totalTokenized?: string;
 }
 
 export interface DashboardMetricsResponse {
@@ -86,14 +87,15 @@ export interface VerificationQueueItem {
 
 function extractArray(response: any): any[] {
   if (!response) return [];
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response.data)) return response.data;
-  if (Array.isArray(response.assets)) return response.assets;
-  if (Array.isArray(response.breakdown)) return response.breakdown;
-  if (Array.isArray(response.results)) return response.results;
-  if (Array.isArray(response.list)) return response.list;
+  const root = response?.data ?? response;
+  if (Array.isArray(root)) return root;
+  if (Array.isArray(root.data)) return root.data;
+  if (Array.isArray(root.assets)) return root.assets;
+  if (Array.isArray(root.breakdown)) return root.breakdown;
+  if (Array.isArray(root.results)) return root.results;
+  if (Array.isArray(root.list)) return root.list;
   
-  const arrays = Object.values(response).filter(Array.isArray);
+  const arrays = Object.values(root).filter(Array.isArray);
   if (arrays.length > 0) return arrays[0] as any[];
   
   return [];
@@ -106,6 +108,7 @@ export const dashboardApi = baseApi.injectEndpoints({
       query: () => "/admin/dashboard-data",
       providesTags: ["Asset", "Transaction"],
       transformResponse: (response: any) => {
+        const root = response?.data ?? response;
         const stats: DashboardStat[] = [
           {
             label: "TOTAL AUM",
@@ -114,23 +117,23 @@ export const dashboardApi = baseApi.injectEndpoints({
           },
           {
             label: "ACTIVE INVESTORS",
-            value: String(response?.users?.investors || 0),
+            value: String(root?.users?.investors || 0),
             change: "+0",
           },
           {
             label: "ACTIVE ISSUERS",
-            value: String(response?.users?.issuers || 0),
+            value: String(root?.users?.issuers || 0),
             change: "+0",
           },
           {
             label: "PLATFORM REVENUE",
-            value: `$${response?.revenue?.totalRevenue || 0}`,
+            value: `$${root?.revenue?.totalRevenue || 0}`,
             change: "+0%",
           }
         ];
         return {
           stats,
-          revenueData: response?.revenue?.monthlyRevenue || [],
+          revenueData: root?.revenue?.monthlyRevenue || [],
           donutData: [],
         };
       }
@@ -162,10 +165,11 @@ export const dashboardApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Asset", "Transaction", "Compliance"],
       transformResponse: (response: any) => {
+        const root = response?.data ?? response;
         const stats: DashboardStat[] = [];
         
-        if (response?.metrics) {
-          const m = response.metrics;
+        if (root?.metrics) {
+          const m = root.metrics;
           if (m.totalAum) {
             const val = m.totalAum.value;
             const formattedVal = val === 0 ? "$0" : `$${val.toLocaleString()}`;
@@ -205,8 +209,8 @@ export const dashboardApi = baseApi.injectEndpoints({
         }
 
         let revenueData: RevenuePoint[] = [];
-        if (response?.revenuePayouts?.series) {
-          revenueData = response.revenuePayouts.series.map((item: any) => ({
+        if (root?.revenuePayouts?.series) {
+          revenueData = root.revenuePayouts.series.map((item: any) => ({
             name: item.month,
             value: item.revenue || 0,
             payouts: item.payouts || 0,
@@ -214,16 +218,22 @@ export const dashboardApi = baseApi.injectEndpoints({
         }
 
         let donutData: AumAssetType[] = [];
-        if (response?.aumByAssetType?.breakdown) {
-          donutData = response.aumByAssetType.breakdown.map((item: any) => ({
-            name: item.category || item.name || "Other",
-            value: item.value || 0,
-          }));
+        let totalTokenized = "$0M";
+        if (root?.aumByAssetType) {
+          if (root.aumByAssetType.totalTokenized) {
+            totalTokenized = `$${(root.aumByAssetType.totalTokenized / 1000000).toFixed(1)}M`;
+          }
+          if (root.aumByAssetType.breakdown) {
+            donutData = root.aumByAssetType.breakdown.map((item: any) => ({
+              name: item.label || item.category || item.name || "Other",
+              value: item.amount || item.value || 0,
+            }));
+          }
         }
 
         let alerts: AmlAlert[] = [];
-        if (response?.alerts) {
-          alerts = response.alerts.map((item: any) => ({
+        if (root?.alerts) {
+          alerts = root.alerts.map((item: any) => ({
             id: item.id || "",
             type: item.type || "Alert",
             entity: item.entityName || item.entity || "Unknown",
@@ -240,6 +250,7 @@ export const dashboardApi = baseApi.injectEndpoints({
           revenueData,
           donutData,
           alerts,
+          totalTokenized,
         };
       }
     }),
@@ -247,18 +258,19 @@ export const dashboardApi = baseApi.injectEndpoints({
       query: () => "/admin/dashboard/metrics",
       providesTags: ["Asset", "Transaction", "User"],
       transformResponse: (response: any) => {
+        const root = response?.data ?? response;
         return {
-          totalAum: response?.totalAum?.value === 0 ? "$0" : `$${response?.totalAum?.value?.toLocaleString()}`,
-          activeInvestors: String(response?.activeInvestors?.value || 0),
-          activeIssuers: String(response?.activeIssuers?.value || 0),
-          revenue: response?.platformRevenue?.value === 0 ? "$0" : `$${response?.platformRevenue?.value?.toLocaleString()}`,
-          aumChange: response?.totalAum?.changePercent !== null && response?.totalAum?.changePercent !== undefined
-            ? `${response?.totalAum?.changePercent >= 0 ? "+" : ""}${response?.totalAum?.changePercent}%`
+          totalAum: root?.totalAum?.value === 0 ? "$0" : `$${root?.totalAum?.value?.toLocaleString()}`,
+          activeInvestors: String(root?.activeInvestors?.value || 0),
+          activeIssuers: String(root?.activeIssuers?.value || 0),
+          revenue: root?.platformRevenue?.value === 0 ? "$0" : `$${root?.platformRevenue?.value?.toLocaleString()}`,
+          aumChange: root?.totalAum?.changePercent !== null && root?.totalAum?.changePercent !== undefined
+            ? `${root?.totalAum?.changePercent >= 0 ? "+" : ""}${root?.totalAum?.changePercent}%`
             : "—",
-          investorsChange: response?.activeInvestors?.changeLabel || "—",
-          issuersChange: response?.activeIssuers?.changeLabel || "—",
-          revenueChange: response?.platformRevenue?.changePercent !== null && response?.platformRevenue?.changePercent !== undefined
-            ? `${response?.platformRevenue?.changePercent >= 0 ? "+" : ""}${response?.platformRevenue?.changePercent}%`
+          investorsChange: root?.activeInvestors?.changeLabel || "—",
+          issuersChange: root?.activeIssuers?.changeLabel || "—",
+          revenueChange: root?.platformRevenue?.changePercent !== null && root?.platformRevenue?.changePercent !== undefined
+            ? `${root?.platformRevenue?.changePercent >= 0 ? "+" : ""}${root?.platformRevenue?.changePercent}%`
             : "—",
         };
       }
@@ -297,11 +309,14 @@ export const dashboardApi = baseApi.injectEndpoints({
     getVerification: builder.query<VerificationSummary, void>({
       query: () => "/admin/dashboard/verification",
       providesTags: ["User"],
-      transformResponse: (response: any) => ({
-        pendingKYC: response?.kyc?.pending || 0,
-        pendingAccreditation: 0,
-        pendingCompliance: response?.kyb?.pending || 0,
-      }),
+      transformResponse: (response: any) => {
+        const root = response?.data ?? response;
+        return {
+          pendingKYC: root?.kyc?.pending || 0,
+          pendingAccreditation: 0,
+          pendingCompliance: root?.kyb?.pending || 0,
+        };
+      }
     }),
     getVerificationQueue: builder.query<VerificationQueueItem[], { limit?: number } | void>({
       query: (params) => ({
@@ -310,9 +325,10 @@ export const dashboardApi = baseApi.injectEndpoints({
       }),
       providesTags: ["User"],
       transformResponse: (response: any) => {
+        const root = response?.data ?? response;
         const queue: VerificationQueueItem[] = [];
-        if (response?.kyc) {
-          response.kyc.forEach((item: any) => {
+        if (root?.kyc) {
+          root.kyc.forEach((item: any) => {
             queue.push({
               id: item.userId || "",
               name: item.name || "Unknown",
@@ -322,8 +338,8 @@ export const dashboardApi = baseApi.injectEndpoints({
             });
           });
         }
-        if (response?.kyb) {
-          response.kyb.forEach((item: any) => {
+        if (root?.kyb) {
+          root.kyb.forEach((item: any) => {
             queue.push({
               id: item.userId || item.issuerId || "",
               name: item.name || "Unknown",
