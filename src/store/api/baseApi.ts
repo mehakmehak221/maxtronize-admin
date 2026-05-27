@@ -22,6 +22,6 @@ export const baseApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["User", "Issuer", "Asset", "Transaction", "Compliance", "Rbac"],
+  tagTypes: ["User", "Issuer", "Asset", "Transaction", "Compliance", "Rbac", "Yield"],
   endpoints: () => ({}),
 });

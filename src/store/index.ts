@@ -13,3 +13,4 @@ export * from "./api/authApi";
 export * from "./api/transactionsApi";
 export * from "./api/platformApi";
 export * from "./api/usersApi";
+export * from "./api/yieldApi";
