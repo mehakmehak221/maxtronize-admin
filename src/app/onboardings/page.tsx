@@ -118,10 +118,11 @@ function formatStatus(status?: string) {
   return (status || "PENDING").replace(/_/g, " ");
 }
 
-function formatDate(value?: string) {
+function formatDate(value?: any) {
   if (!value) return "N/A";
+  if (typeof value === "object") return "N/A"; // Prevent raw objects from falling through
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleString();
 }
 

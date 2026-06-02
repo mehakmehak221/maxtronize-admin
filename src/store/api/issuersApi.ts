@@ -131,15 +131,89 @@ function extractArray(response: any): any[] {
   return [];
 }
 
+function safeStr(val: any, fallback = ""): string {
+  if (typeof val === "string") return val;
+  if (typeof val === "number") return String(val);
+  if (val && typeof val === "object" && typeof val.name === "string") return val.name;
+  return fallback;
+}
+
+function mapIssuerAsset(item: any): IssuerAsset {
+  return {
+    id: safeStr(item.id || item.assetId, ""),
+    name: safeStr(item.name || item.assetName || item.title, "Untitled"),
+    type: safeStr(item.type || item.assetType, "N/A"),
+    amount: typeof item.amount === "number" ? `$${item.amount.toLocaleString()}` : safeStr(item.amount || item.targetAmount || item.targetRaise, "$0"),
+    date: item.date ? safeStr(item.date) : (item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""),
+    status: safeStr(item.status || item.reviewStatus, "Pending"),
+  };
+}
+
+function mapIssuerCompliance(item: any): IssuerComplianceItem {
+  const rawDate = item.date || item.updatedAt || item.createdAt || item.submittedAt || item.reviewedAt;
+  return {
+    label: safeStr(item.label || item.type || item.name, "Compliance Check"),
+    desc: safeStr(item.desc || item.description || item.details, ""),
+    status: safeStr(item.status, "Pending"),
+    date: rawDate ? (typeof rawDate === "string" ? rawDate : new Date(rawDate).toLocaleDateString()) : "",
+  };
+}
+
+function mapIssuerDetail(root: any): IssuerDetail {
+  const iss = root || {};
+  const header = iss?.header || iss || {};
+  const overview = iss?.overview || iss || {};
+  const contact = iss?.contact || header?.contact || overview?.contact || {};
+  
+  const stats = iss?.stats || header?.stats || overview?.stats || {};
+  const assetSummary = iss?.assetSummary || overview?.assetSummary || {};
+  const financials = iss?.financials || overview?.financials || { revenue: [], health: [] };
+  
+  return {
+    id: safeStr(iss.id || iss.issuerId || iss.userId, ""),
+    name: safeStr(header.name || iss.name || overview.name || iss.companyName || iss.businessName || iss.legalName, "Unknown Issuer"),
+    location: safeStr(header.location || iss.location || overview.location || iss.country || iss.jurisdiction, "N/A"),
+    regNumber: safeStr(header.regNumber || iss.regNumber || overview.regNumber || iss.registrationNumber, "N/A"),
+    status: safeStr(header.kybStatusLabel || header.kybStatus || iss.kybStatusLabel || iss.kybStatus || overview.kybStatusLabel || overview.kybStatus || header.status || iss.status || overview.status, "Pending"),
+    joined: header.joined ? safeStr(header.joined) : (iss.joined ? safeStr(iss.joined) : (iss.createdAt ? new Date(iss.createdAt).toLocaleDateString() : "")),
+    bio: safeStr(overview.bio || iss.bio || overview.description || iss.description || iss.about, ""),
+    contact: {
+      email: safeStr(contact.email || iss.email, ""),
+      phone: safeStr(contact.phone || iss.phone, ""),
+      website: safeStr(contact.website || iss.website, ""),
+    },
+    stats: {
+      totalRaised: typeof stats.totalRaised === "number" ? `$${stats.totalRaised.toLocaleString()}` : safeStr(stats.totalRaised || iss.totalRaised || overview.totalRaised, "$0"),
+      aum: typeof stats.aum === "number" ? `$${stats.aum.toLocaleString()}` : safeStr(stats.aum || iss.aum || iss.totalAum || overview.aum, "$0"),
+      totalInvestors: typeof stats.totalInvestors === "number" ? stats.totalInvestors : Number(stats.totalInvestors || iss.totalInvestors || overview.totalInvestors || 0),
+      avgYield: typeof stats.avgYield === "number" ? `${stats.avgYield}%` : safeStr(stats.avgYield || iss.avgYield || overview.avgYield, "0%"),
+    },
+    assetSummary: {
+      active: typeof assetSummary.active === "number" ? assetSummary.active : 0,
+      submitted: typeof assetSummary.submitted === "number" ? assetSummary.submitted : 0,
+      approved: typeof assetSummary.approved === "number" ? assetSummary.approved : 0,
+      rejected: typeof assetSummary.rejected === "number" ? assetSummary.rejected : 0,
+    },
+    personnel: Array.isArray(iss.personnel || overview.personnel) ? (iss.personnel || overview.personnel).map((p: any) => ({
+      name: safeStr(p.name || p.fullName, "Unknown"),
+      role: safeStr(p.role || p.title, "Team Member"),
+      verified: !!p.verified,
+    })) : [],
+    assets: extractArray(iss.assets || overview.assets).map(mapIssuerAsset),
+    financials: financials,
+    growthData: Array.isArray(iss.growthData || overview.growthData) ? (iss.growthData || overview.growthData) : [],
+  };
+}
+
 function normalizeIssuerInitResponse(response: any): IssuerInitResponse {
   const root = response?.data ?? response;
   const issuer = root?.issuer ?? root ?? {};
 
   return {
-    issuer,
-    assets: extractArray(root?.assets ?? issuer?.assets),
+    issuer: mapIssuerDetail(issuer),
+    assets: extractArray(root?.assets ?? issuer?.assets).map(mapIssuerAsset),
     financials: root?.financials ?? issuer?.financials ?? { revenue: [], health: [] },
-    compliance: extractArray(root?.compliance ?? issuer?.compliance),
+    compliance: extractArray(root?.compliance ?? issuer?.compliance).map(mapIssuerCompliance),
   };
 }
 
@@ -225,16 +299,17 @@ export const issuersApi = baseApi.injectEndpoints({
     }),
     getIssuerById: builder.query<IssuerDetail, string>({
       query: (id) => `/admin/issuers/${id}`,
+      transformResponse: (response: any) => mapIssuerDetail(response?.data ?? response),
       providesTags: (result, error, id) => [{ type: "Issuer", id }],
     }),
     getIssuerAssets: builder.query<IssuerAsset[], string>({
       query: (id) => `/admin/issuers/${id}/assets`,
-      transformResponse: (response: any) => extractArray(response),
+      transformResponse: (response: any) => extractArray(response).map(mapIssuerAsset),
       providesTags: (result, error, id) => [{ type: "Issuer", id: `${id}_assets` }],
     }),
     getIssuerCompliance: builder.query<IssuerComplianceItem[], string>({
       query: (id) => `/admin/issuers/${id}/compliance`,
-      transformResponse: (response: any) => extractArray(response),
+      transformResponse: (response: any) => extractArray(response).map(mapIssuerCompliance),
       providesTags: (result, error, id) => [{ type: "Issuer", id: `${id}_compliance` }],
     }),
     getIssuerFinancials: builder.query<IssuerFinancials, string>({

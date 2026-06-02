@@ -95,13 +95,13 @@ export const platformApi = baseApi.injectEndpoints({
         const root = response?.data ?? response;
         const arr = extractArray(root);
         return arr.map((item: any) => ({
-          id: item.id || "",
-          action: item.action || item.type || item.eventType || "",
-          entity: item.entity || item.entityName || item.name || "",
-          entityType: item.entityType || item.entityRole || "",
-          performedBy: item.performedBy || item.adminName || item.actor || "Admin",
-          date: item.createdAt ? new Date(item.createdAt).toLocaleString() : item.date || "",
-          status: item.status,
+          id: typeof item.id === "string" ? item.id : String(item.id || ""),
+          action: typeof item.action === "string" ? item.action : (item.type || item.eventType || ""),
+          entity: typeof item.entity === "string" ? item.entity : (item.entityName || item.name || ""),
+          entityType: typeof item.entityType === "string" ? item.entityType : (item.entityRole || ""),
+          performedBy: typeof item.performedBy === "string" ? item.performedBy : (item.adminName || item.actor || "Admin"),
+          date: item.createdAt ? new Date(item.createdAt).toLocaleString() : (typeof item.date === "string" ? item.date : ""),
+          status: typeof item.status === "string" ? item.status : undefined,
         }));
       },
       providesTags: ["Transaction"],

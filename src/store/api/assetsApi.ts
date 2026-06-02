@@ -113,11 +113,36 @@ function extractArray(response: any): any[] {
   if (Array.isArray(root.assets)) return root.assets;
   if (Array.isArray(root.results)) return root.results;
   if (Array.isArray(root.list)) return root.list;
-  
+
   const arrays = Object.values(root).filter(Array.isArray);
   if (arrays.length > 0) return arrays[0] as any[];
-  
+
   return [];
+}
+
+function safeStr(val: any, fallback = ""): string {
+  if (typeof val === "string") return val;
+  if (typeof val === "number") return String(val);
+  if (val && typeof val === "object" && typeof val.name === "string") return val.name;
+  return fallback;
+}
+
+function mapAssetDocument(item: any): any {
+  const rawDate = item.uploadedAt || item.createdAt || item.date || item.submittedAt;
+  const dateStr = rawDate ? (typeof rawDate === "string" ? rawDate : new Date(rawDate).toLocaleDateString()) : "N/A";
+  
+  const baseUrl = (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_BASE_URL) 
+    ? process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/$/, "") 
+    : "https://maxtronize-api.maxtron.ai";
+    
+  return {
+    id: safeStr(item.id || item.docId, Math.random().toString()),
+    name: safeStr(item.name || item.title || item.fileName, "Untitled Document"),
+    type: safeStr(item.type || item.docType || item.fileType || item.category, "Document"),
+    status: safeStr(item.status || item.verificationStatus || item.reviewStatus, "Pending"),
+    url: item.downloadKey ? `${baseUrl}/${item.downloadKey}` : safeStr(item.url || item.link, "#"),
+    uploadedAt: dateStr === "Invalid Date" ? "N/A" : dateStr,
+  };
 }
 
 export const assetsApi = baseApi.injectEndpoints({
@@ -128,13 +153,35 @@ export const assetsApi = baseApi.injectEndpoints({
         url: "/admin/assets/pending",
         params: params || {},
       }),
-      transformResponse: (response: any) => extractArray(response),
+      transformResponse: (response: any) => {
+        const list = extractArray(response);
+        return list.map((item: any) => ({
+          ...item,
+
+          issuer: item.issuer?.name || item.issuerName || (typeof item.issuer === "string" ? item.issuer : "") || "",
+          issuerName: item.issuerName || item.issuer?.name || (typeof item.issuer === "string" ? item.issuer : "") || "",
+          name: item.assetName || item.name || item.title || "",
+          assetName: item.assetName || item.name || item.title || "",
+          amount: typeof item.amount === "number"
+            ? `$${item.amount.toLocaleString()}`
+            : typeof item.amount === "string"
+              ? item.amount
+              : typeof item.totalValuation === "number"
+                ? `$${item.totalValuation.toLocaleString()}`
+                : item.amount || "",
+          status: item.reviewStatus || item.status || "Pending",
+          type: item.assetTypeLabel || item.assetType || item.type || "",
+          date: item.submittedAt
+            ? new Date(item.submittedAt).toLocaleDateString()
+            : item.date || "",
+        }));
+      },
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: "Asset" as const, id })),
-              { type: "Asset", id: "PENDING_LIST" },
-            ]
+            ...result.map(({ id }) => ({ type: "Asset" as const, id })),
+            { type: "Asset", id: "PENDING_LIST" },
+          ]
           : [{ type: "Asset", id: "PENDING_LIST" }],
     }),
     getAssetById: builder.query<AssetDetail, string>({
@@ -162,7 +209,7 @@ export const assetsApi = baseApi.injectEndpoints({
     }),
     getAssetDocuments: builder.query<AssetDocumentsResponse, string>({
       query: (id) => `/admin/assets/${id}/documents`,
-      transformResponse: (response: any) => extractArray(response),
+      transformResponse: (response: any) => extractArray(response).map(mapAssetDocument),
       providesTags: (result, error, id) => [{ type: "Asset", id: `${id}_documents` }],
     }),
     getAssetFinancials: builder.query<AssetFinancialsTab, string>({

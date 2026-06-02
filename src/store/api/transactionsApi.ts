@@ -33,17 +33,35 @@ function extractArray(response: any): any[] {
 }
 
 function mapTransaction(tx: any): TransactionItem {
+  const assetName =
+    tx.asset?.name ||
+    tx.assetName ||
+    (typeof tx.asset === "string" ? tx.asset : "") ||
+    "";
+
+  const investorName =
+    tx.investor?.name ||
+    tx.investorName ||
+    (typeof tx.investor === "string" ? tx.investor : "") ||
+    tx.user?.name ||
+    tx.user?.email ||
+    "";
+
   return {
     id: tx.id || tx.transactionId || "",
     type: tx.type || tx.transactionType || "Investment",
-    asset: tx.asset?.name || tx.assetName || tx.asset || "",
-    investor: tx.investor?.name || tx.investorName || tx.investor || tx.user?.name || "",
+    asset: assetName,
+    investor: investorName,
     amount: typeof tx.amount === "number"
       ? `$${tx.amount.toLocaleString()}`
-      : tx.amount || "$0",
+      : typeof tx.amount === "string"
+        ? tx.amount
+        : "$0",
     fee: typeof tx.fee === "number"
       ? `$${tx.fee.toLocaleString()}`
-      : tx.fee || "$0",
+      : typeof tx.fee === "string"
+        ? tx.fee
+        : "$0",
     status: tx.status || "Pending",
     date: tx.createdAt
       ? new Date(tx.createdAt).toLocaleString()

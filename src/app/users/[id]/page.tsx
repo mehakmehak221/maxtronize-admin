@@ -847,7 +847,8 @@ export default function UserDetails({
             ))}
 
             {/* Direct AML / KYC Clearance Interventions (Simulation Fallback) */}
-            {investorData.compliance.filter((item: any) => item.canApprove && item.key).length === 0 && (
+            {investorData.compliance.filter((item: any) => item.canApprove && item.key).length === 0 && 
+             investorData.status !== "Verified" && investorData.status !== "VERIFIED" && (
               <div className="bg-[var(--shell-card)] p-6 md:p-8 rounded-[32px] border border-[var(--shell-card-border)] shadow-sm dark:shadow-none flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                   <h3 className="text-sm font-black text-[var(--foreground)] mb-1 flex items-center gap-2">

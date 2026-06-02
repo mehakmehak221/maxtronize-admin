@@ -102,7 +102,7 @@ export default function AssetDetailPage({
       return {
         id: headerData?.assetCode || headerData?.id || id,
         name: headerData?.title || headerData?.assetName || headerData?.name || overviewData?.title || overviewData?.assetName || overviewData?.name || "Unknown Asset",
-        issuer: headerData?.issuerName || headerData?.issuer || overviewData?.issuerName || overviewData?.issuer || "Unknown Issuer",
+        issuer: headerData?.issuerName || (typeof headerData?.issuer === "string" ? headerData.issuer : ((headerData?.issuer as any)?.name || "")) || overviewData?.issuerName || (typeof overviewData?.issuer === "string" ? overviewData.issuer : ((overviewData?.issuer as any)?.name || "")) || "Unknown Issuer",
         type: headerData?.assetTypeLabel || headerData?.assetType || headerData?.type || overviewData?.assetTypeLabel || "Unknown Type",
         status: headerData?.reviewStatus || headerData?.status || "Unknown Status",
         jurisdiction: overviewData?.location || overviewData?.jurisdiction || headerData?.jurisdiction || "N/A",
@@ -124,7 +124,7 @@ export default function AssetDetailPage({
       const operatingExpenses = financialsData?.summary?.operatingExpenses?.value;
       const capitalRaisedRecent = financialsData?.capitalRaisedRecent;
       const currency = financialsData?.currency || "USD";
-      
+
       return {
         valuation: summaryValuation !== undefined ? `${summaryValuation} ${currency}` : (headerData?.totalValuation !== undefined ? `$${headerData.totalValuation}` : "N/A"),
         targetRaise: headerData?.targetRaise !== undefined ? `$${headerData.targetRaise}` : "N/A",
@@ -146,7 +146,7 @@ export default function AssetDetailPage({
         description: check.description || "No description",
         status: check.status || "Pending",
       }));
-      
+
       const passedChecks = issues.filter((i: any) => i.status?.toLowerCase() === "passed" || i.status?.toLowerCase() === "verified");
       const score = complianceData.complianceScore !== undefined ? complianceData.complianceScore : (issues.length > 0 ? Math.round((passedChecks.length / issues.length) * 100) : 0);
 
@@ -247,7 +247,7 @@ export default function AssetDetailPage({
           Back to Asset List
         </Link>
         <div className="flex items-center gap-3">
-          
+
           <ThemeToggleButton compact />
         </div>
       </div>
@@ -314,11 +314,10 @@ export default function AssetDetailPage({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`relative flex items-center gap-2 px-4 md:px-5 py-3 text-xs md:text-sm font-bold transition-colors whitespace-nowrap ${
-                  isActive
-                    ? "text-[var(--shell-active)]"
-                    : "text-[var(--shell-muted)] hover:text-[var(--foreground)]"
-                }`}
+                className={`relative flex items-center gap-2 px-4 md:px-5 py-3 text-xs md:text-sm font-bold transition-colors whitespace-nowrap ${isActive
+                  ? "text-[var(--shell-active)]"
+                  : "text-[var(--shell-muted)] hover:text-[var(--foreground)]"
+                  }`}
               >
                 <tab.icon size={16} />
                 {tab.label}
@@ -377,21 +376,21 @@ export default function AssetDetailPage({
                           <AreaChart data={overviewData.projectedRevenue.series} margin={{ top: 40, right: 0, left: 0, bottom: 0 }}>
                             <defs>
                               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                               </linearGradient>
                             </defs>
-                            <XAxis 
-                              dataKey="month" 
-                              axisLine={false} 
-                              tickLine={false} 
+                            <XAxis
+                              dataKey="month"
+                              axisLine={false}
+                              tickLine={false}
                               tick={{ fontSize: 10, fill: "var(--shell-muted)", fontWeight: "bold" }}
                               dy={10}
                             />
                             <Tooltip
-                              contentStyle={{ 
-                                backgroundColor: "var(--shell-card)", 
-                                borderRadius: "12px", 
+                              contentStyle={{
+                                backgroundColor: "var(--shell-card)",
+                                borderRadius: "12px",
                                 border: "1px solid var(--shell-card-border)",
                                 fontSize: "12px",
                                 fontWeight: "bold",
@@ -400,13 +399,13 @@ export default function AssetDetailPage({
                               itemStyle={{ color: "#10b981" }}
                               formatter={(value: any) => [`$${value.toLocaleString()}`, "Revenue"]}
                             />
-                            <Area 
-                              type="monotone" 
-                              dataKey="revenue" 
-                              stroke="#10b981" 
+                            <Area
+                              type="monotone"
+                              dataKey="revenue"
+                              stroke="#10b981"
                               strokeWidth={3}
-                              fillOpacity={1} 
-                              fill="url(#colorRevenue)" 
+                              fillOpacity={1}
+                              fill="url(#colorRevenue)"
                             />
                           </AreaChart>
                         </ResponsiveContainer>
@@ -563,9 +562,8 @@ export default function AssetDetailPage({
                       {item.label}
                     </span>
                     <span
-                      className={`text-xl md:text-2xl font-black ${
-                        item.highlight ? "text-emerald-500" : "text-[var(--foreground)]"
-                      }`}
+                      className={`text-xl md:text-2xl font-black ${item.highlight ? "text-emerald-500" : "text-[var(--foreground)]"
+                        }`}
                     >
                       {item.value}
                     </span>
@@ -658,6 +656,9 @@ export default function AssetDetailPage({
                       </span>
                       <a
                         href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download={doc.name}
                         className="p-2 rounded-lg hover:bg-slate-800 text-[var(--shell-muted)] hover:text-white transition-colors"
                         title="Download Document"
                       >

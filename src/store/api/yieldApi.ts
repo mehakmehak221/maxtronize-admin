@@ -34,26 +34,23 @@ function extractArray(response: any): any[] {
 
 function mapDistribution(item: any): Distribution {
   return {
+    // Spread raw item first so our explicit safe fields below always take precedence
+    ...item,
     id: item.id || "",
     issuerId: item.issuerId || "",
-    issuerName: item.issuerName || item.issuer?.name || "",
+    issuerName: item.issuerName || item.issuer?.name || (typeof item.issuer === "string" ? item.issuer : ""),
     assetId: item.assetId || "",
-    assetName: item.assetName || item.asset?.name || "",
+    assetName: item.assetName || item.asset?.name || (typeof item.asset === "string" ? item.asset : ""),
     totalAmount: typeof item.totalAmount === "number"
       ? `$${item.totalAmount.toLocaleString()}`
-      : item.totalAmount || "$0",
+      : (typeof item.totalAmount === "string" ? item.totalAmount : "$0"),
     scheduledDate: item.scheduledDate
       ? new Date(item.scheduledDate).toLocaleDateString()
-      : item.scheduledDate || "",
-    status: item.status || "SCHEDULED",
-    reason: item.reason || "",
-    createdAt: item.createdAt
-      ? new Date(item.createdAt).toLocaleString()
-      : item.createdAt || "",
-    updatedAt: item.updatedAt
-      ? new Date(item.updatedAt).toLocaleString()
-      : item.updatedAt || "",
-    ...item,
+      : "",
+    status: typeof item.status === "string" ? item.status : "SCHEDULED",
+    reason: typeof item.reason === "string" ? item.reason : "",
+    createdAt: item.createdAt ? new Date(item.createdAt).toLocaleString() : "",
+    updatedAt: item.updatedAt ? new Date(item.updatedAt).toLocaleString() : "",
   };
 }
 

@@ -134,10 +134,10 @@ function extractArray(response: any): any[] {
   if (Array.isArray(root.transactions)) return root.transactions;
   if (Array.isArray(root.activities)) return root.activities;
   if (Array.isArray(root.checks)) return root.checks;
-  
+
   const arrays = Object.values(root).filter(Array.isArray);
   if (arrays.length > 0) return arrays[0] as any[];
-  
+
   return [];
 }
 
@@ -147,13 +147,13 @@ function mapInvestorDetail(response: any, id: string): InvestorDetail {
   const overview = root?.overview || root || {};
   const statsSource = header.summary || overview.stats || {};
   const statistics = overview.statistics || {};
-  
+
   const formatUSD = (val: any) => {
     if (val === null || val === undefined) return "$0";
     if (typeof val === "string") return val.startsWith("$") ? val : `$${val}`;
     return `$${Number(val).toLocaleString()}`;
   };
-  
+
   const formatPercent = (val: any) => {
     if (val === null || val === undefined) return "+0%";
     const num = Number(val);
@@ -183,19 +183,30 @@ function mapInvestorDetail(response: any, id: string): InvestorDetail {
     },
     portfolioAllocation: Array.isArray(overview.allocation)
       ? overview.allocation.map((item: any) => ({
-          name: item.category || item.name || "Asset",
-          value: item.percentage || item.value || 0,
-          color: item.color
-        }))
+        name: item.category || item.name || "Asset",
+        value: item.percentage || item.value || 0,
+        color: item.color
+      }))
       : (Array.isArray(overview.portfolioAllocation) ? overview.portfolioAllocation : []),
     performanceData: Array.isArray(overview.performance?.series)
       ? overview.performance.series.map((item: any) => ({
-          name: item.date ? new Date(item.date).toLocaleDateString('en-US', { month: 'short' }) : (item.name || "Jan"),
-          value: item.value || 0,
-        }))
+        name: item.date ? new Date(item.date).toLocaleDateString('en-US', { month: 'short' }) : (item.name || "Jan"),
+        value: item.value || 0,
+      }))
       : (Array.isArray(overview.performanceData) ? overview.performanceData : []),
-    investments: Array.isArray(root?.investments?.investments) 
+    investments: Array.isArray(root?.investments?.investments)
       ? root.investments.investments.map((inv: any) => ({
+        name: inv.assetName || inv.name || "Asset",
+        id: inv.assetId || inv.id || "",
+        tokens: inv.tokensOwned || inv.tokens || 0,
+        invested: formatUSD(inv.amountInvested || inv.invested || 0),
+        value: formatUSD(inv.currentValue || inv.value || 0),
+        return: formatPercent(inv.totalReturnPercent || inv.return || 0),
+        gain: formatUSD(inv.unrealizedGain || inv.gain || 0),
+        status: typeof inv.status === "string" ? inv.status : "Active",
+      }))
+      : Array.isArray(root?.investments)
+        ? root.investments.map((inv: any) => ({
           name: inv.assetName || inv.name || "Asset",
           id: inv.assetId || inv.id || "",
           tokens: inv.tokensOwned || inv.tokens || 0,
@@ -203,28 +214,36 @@ function mapInvestorDetail(response: any, id: string): InvestorDetail {
           value: formatUSD(inv.currentValue || inv.value || 0),
           return: formatPercent(inv.totalReturnPercent || inv.return || 0),
           gain: formatUSD(inv.unrealizedGain || inv.gain || 0),
-          status: inv.status || "Active",
+          status: typeof inv.status === "string" ? inv.status : "Active",
         }))
-      : (Array.isArray(root?.investments) ? root.investments : []),
+        : [],
     transactions: Array.isArray(root?.transactions?.transactions)
       ? root.transactions.transactions.map((tx: any) => ({
-          type: tx.type || "Investment",
-          asset: tx.assetName || tx.asset || "",
+        type: typeof tx.type === "string" ? tx.type : "Investment",
+        asset: tx.assetName || (typeof tx.asset === "string" ? tx.asset : (tx.asset?.name || "")),
+        amount: `${tx.type === "Investment" ? "-" : "+"}${formatUSD(tx.amount || 0)}`,
+        date: tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : (tx.date || "N/A"),
+        status: typeof tx.status === "string" ? tx.status : "Completed",
+      }))
+      : Array.isArray(root?.transactions)
+        ? root.transactions.map((tx: any) => ({
+          type: typeof tx.type === "string" ? tx.type : "Investment",
+          asset: tx.assetName || (typeof tx.asset === "string" ? tx.asset : (tx.asset?.name || "")),
           amount: `${tx.type === "Investment" ? "-" : "+"}${formatUSD(tx.amount || 0)}`,
           date: tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : (tx.date || "N/A"),
-          status: tx.status || "Completed",
+          status: typeof tx.status === "string" ? tx.status : "Completed",
         }))
-      : (Array.isArray(root?.transactions) ? root.transactions : []),
+        : [],
     compliance: Array.isArray(root?.compliance?.checks)
       ? root.compliance.checks.map((item: any) => ({
-          label: item.title || item.label || "",
-          status: item.status || "Pending",
-          date: item.lastUpdated ? new Date(item.lastUpdated).toLocaleDateString() : (item.date || "N/A"),
-          desc: item.description || item.desc || "",
-          key: item.key,
-          canApprove: item.canApprove,
-          rawStatus: item.rawStatus,
-        }))
+        label: item.title || item.label || "",
+        status: item.status || "Pending",
+        date: item.lastUpdated ? new Date(item.lastUpdated).toLocaleDateString() : (item.date || "N/A"),
+        desc: item.description || item.desc || "",
+        key: item.key,
+        canApprove: item.canApprove,
+        rawStatus: item.rawStatus,
+      }))
       : (Array.isArray(root?.compliance) ? root.compliance : [])
   };
 }
@@ -265,9 +284,9 @@ export const investorsApi = baseApi.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: "User" as const, id })),
-              { type: "User", id: "INVESTORS_LIST" },
-            ]
+            ...result.map(({ id }) => ({ type: "User" as const, id })),
+            { type: "User", id: "INVESTORS_LIST" },
+          ]
           : [{ type: "User", id: "INVESTORS_LIST" }],
     }),
     getInvestorById: builder.query<InvestorDetail, string>({
@@ -469,11 +488,11 @@ export const investorsApi = baseApi.injectEndpoints({
           return `$${Number(val).toLocaleString()}`;
         };
         return list.map((tx: any) => ({
-          type: tx.type || "Investment",
-          asset: tx.assetName || tx.asset || "",
+          type: typeof tx.type === "string" ? tx.type : "Investment",
+          asset: tx.assetName || (typeof tx.asset === "string" ? tx.asset : (tx.asset?.name || "")),
           amount: `${tx.type === "Investment" ? "-" : "+"}${formatUSD(tx.amount || 0)}`,
           date: tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : (tx.date || "N/A"),
-          status: tx.status || "Completed",
+          status: typeof tx.status === "string" ? tx.status : "Completed",
         }));
       },
       providesTags: (result, error, id) => [{ type: "User", id: `${id}_transactions` }],
