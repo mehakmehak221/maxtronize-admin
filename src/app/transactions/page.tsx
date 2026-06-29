@@ -45,6 +45,10 @@ export default function TransactionsPage() {
     );
   }, [data, isSimulation, searchQuery]);
 
+  const hasDate = useMemo(() => {
+    return transactions.some((tx) => !!tx.date);
+  }, [transactions]);
+
   return (
     <PageEnter className="p-4 md:p-8 space-y-8 min-h-screen pb-20">
       {/* Header */}
@@ -102,7 +106,9 @@ export default function TransactionsPage() {
                   <th className="px-6 py-6 text-[10px] font-black text-[var(--shell-muted)] uppercase">AMOUNT</th>
                   <th className="px-6 py-6 text-[10px] font-black text-[var(--shell-muted)] uppercase">FEE</th>
                   <th className="px-6 py-6 text-[10px] font-black text-[var(--shell-muted)] uppercase">STATUS</th>
-                  <th className="px-8 py-6 text-[10px] font-black text-[var(--shell-muted)] uppercase">DATE</th>
+                  {hasDate && (
+                    <th className="px-8 py-6 text-[10px] font-black text-[var(--shell-muted)] uppercase">DATE</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--shell-card-border)]">
@@ -149,9 +155,11 @@ export default function TransactionsPage() {
                         {tx.status}
                       </span>
                     </td>
-                    <td className="px-8 py-6 text-sm font-bold text-[var(--shell-muted)] whitespace-nowrap">
-                      {tx.date}
-                    </td>
+                    {hasDate && (
+                      <td className="px-8 py-6 text-sm font-bold text-[var(--shell-muted)] whitespace-nowrap">
+                        {tx.date}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

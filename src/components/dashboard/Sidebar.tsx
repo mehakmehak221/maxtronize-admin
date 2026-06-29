@@ -111,7 +111,7 @@ export const Sidebar = () => {
 
         <div className="p-4 sm:p-6 border-t border-[var(--shell-sidebar-border)] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[var(--shell-active)] flex items-center justify-center text-white font-black text-xs shadow-lg shadow-[var(--shell-active)]/25">
+            <div className="w-10 h-10 shrink-0 rounded-full bg-[var(--shell-active)] flex items-center justify-center text-white font-black text-xs shadow-lg shadow-[var(--shell-active)]/25">
               PA
             </div>
             <div className="flex-1 min-w-0">

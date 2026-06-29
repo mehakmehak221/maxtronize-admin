@@ -57,6 +57,14 @@ function extractArray(response: any): any[] {
   return [];
 }
 
+/** Returns a formatted date string, or "" if the value is missing/invalid. */
+function safeDate(value: any, opts?: { time?: boolean }): string {
+  if (!value || typeof value !== "string" && typeof value !== "number") return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  return opts?.time ? d.toLocaleString() : d.toLocaleDateString();
+}
+
 function mapUser(item: any): UnifiedUserListItem {
   return {
     id: item.id || item.userId || "",
@@ -67,9 +75,7 @@ function mapUser(item: any): UnifiedUserListItem {
     status: item.status || "Active",
     kycStatus: item.kycStatusLabel || item.kycStatus,
     kybStatus: item.kybStatusLabel || item.kybStatus,
-    joined: item.createdAt
-      ? new Date(item.createdAt).toLocaleDateString()
-      : item.joined || item.joinedAt || "",
+    joined: safeDate(item.createdAt) || safeDate(item.joinedAt) || item.joined || "",
   };
 }
 
@@ -109,9 +115,7 @@ export const usersApi = baseApi.injectEndpoints({
           status: root.status || "Active",
           kycStatus: root.kycStatusLabel || root.kycStatus,
           kybStatus: root.kybStatusLabel || root.kybStatus,
-          joined: root.createdAt
-            ? new Date(root.createdAt).toLocaleDateString()
-            : root.joined || root.joinedAt || "",
+          joined: safeDate(root.createdAt) || safeDate(root.joinedAt) || root.joined || "",
         };
       }
     }),
@@ -132,9 +136,7 @@ export const usersApi = baseApi.injectEndpoints({
           status: root.status || "Active",
           kycStatus: root.kycStatusLabel || root.kycStatus,
           kybStatus: root.kybStatusLabel || root.kybStatus,
-          joined: root.createdAt
-            ? new Date(root.createdAt).toLocaleDateString()
-            : root.joined || root.joinedAt || "",
+          joined: safeDate(root.createdAt) || safeDate(root.joinedAt) || root.joined || "",
         };
       }
     }),

@@ -147,6 +147,38 @@ export default function AssetsPage() {
     return items;
   }, [data, isSimulation, searchQuery, selectedStatus]);
 
+  const handleExportData = () => {
+    try {
+      if (pendingAssets.length === 0) {
+        alert("No data available to export.");
+        return;
+      }
+      const headers = ["ID", "Name", "Issuer", "Type", "Amount", "Date", "Status"];
+      const rows = pendingAssets.map((asset) => [
+        asset.id,
+        asset.name || asset.assetName || "",
+        asset.issuer || asset.issuerName || "",
+        asset.type || asset.assetTypeLabel || "",
+        asset.amount || "",
+        asset.date || "",
+        asset.status || "",
+      ]);
+      const csvContent =
+        "data:text/csv;charset=utf-8," +
+        [headers.join(","), ...rows.map((r) => r.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `pending_assets_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Failed to export data.");
+    }
+  };
+
   const handleApprove = async (id: string, name: string) => {
     const confirmed = confirm(`Are you sure you want to approve "${name}" (${id})?`);
     if (!confirmed) return;
@@ -239,6 +271,7 @@ export default function AssetsPage() {
           </div>
           <button
             type="button"
+            onClick={handleExportData}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--shell-card-border)] bg-[var(--shell-card)] text-[var(--foreground)] font-bold text-xs hover:bg-[var(--shell-subtle)] transition-all"
           >
             <Download size={14} />

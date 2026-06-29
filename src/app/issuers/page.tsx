@@ -209,14 +209,14 @@ export default function IssuersPage() {
                     key={issuer.id}
                     className="group hover:bg-[var(--shell-subtle)] transition-colors"
                   >
-                    <td className="px-8 py-6">
+                    <td className="px-8 py-6 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-9 h-9 rounded-full ${issuer.color} text-white flex items-center justify-center text-[10px] font-black`}
+                          className={`w-9 h-9 shrink-0 rounded-full ${issuer.color} text-white flex items-center justify-center text-[10px] font-black`}
                         >
                           {issuer.initials}
                         </div>
-                        <span className="text-sm font-black text-[var(--foreground)] whitespace-nowrap">
+                        <span className="text-sm font-black text-[var(--foreground)] truncate max-w-[160px]">
                           {issuer.name}
                         </span>
                       </div>

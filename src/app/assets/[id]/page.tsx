@@ -225,6 +225,66 @@ export default function AssetDetailPage({
     }
   };
 
+  const handleDownloadDocument = async (docUrl: string, docName: string) => {
+    try {
+      const baseUrl = (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_BASE_URL)
+        ? process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/$/, "")
+        : "https://maxtronize-api.maxtron.ai";
+
+      let resolvedUrl = docUrl;
+      if (resolvedUrl && !resolvedUrl.startsWith("http://") && !resolvedUrl.startsWith("https://")) {
+        resolvedUrl = `${baseUrl}/${resolvedUrl.replace(/^\//, "")}`;
+      }
+
+      const token = localStorage.getItem("maxtronize-admin-token");
+      const getHeaders = () => {
+        const headers: HeadersInit = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+        return headers;
+      };
+
+      // Try 1: Fetch original URL (with Auth header)
+      let response = await fetch(resolvedUrl, { headers: getHeaders() });
+      
+      // Try 2: If 404, try prepending /admin
+      if (!response.ok && response.status === 404 && resolvedUrl.includes("/onboarding/") && !resolvedUrl.includes("/admin/onboarding/")) {
+        const adminUrl = resolvedUrl.replace("/onboarding/", "/admin/onboarding/");
+        const adminResponse = await fetch(adminUrl, { headers: getHeaders() });
+        if (adminResponse.ok) {
+          response = adminResponse;
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+      
+      const blob = await response.blob();
+      const localUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = localUrl;
+      a.download = docName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(localUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+      
+      // Fallback: Resolve relative URL for direct navigation
+      let fallbackUrl = docUrl;
+      if (fallbackUrl && !fallbackUrl.startsWith("http://") && !fallbackUrl.startsWith("https://")) {
+        const baseUrl = (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_BASE_URL)
+          ? process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/$/, "")
+          : "https://maxtronize-api.maxtron.ai";
+        fallbackUrl = `${baseUrl}/${fallbackUrl.replace(/^\//, "")}`;
+      }
+      window.open(fallbackUrl, "_blank");
+    }
+  };
+
   const tabs = [
     { id: "overview", label: "Overview", icon: Globe },
     { id: "financials", label: "Financials", icon: TrendingUp },
@@ -262,16 +322,28 @@ export default function AssetDetailPage({
             <ArrowLeft size={20} />
           </Link>
           <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-xl md:text-2xl font-black text-[var(--foreground)] ">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl md:text-2xl font-black text-[var(--foreground)] leading-tight">
                 {asset.name}
               </h1>
-              <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black uppercase border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/25">
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide border whitespace-nowrap ${
+                  asset.status?.toLowerCase().includes("review")
+                    ? "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/25"
+                    : asset.status?.toLowerCase().includes("approv")
+                      ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/25"
+                      : asset.status?.toLowerCase().includes("reject")
+                        ? "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/25"
+                        : "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/25"
+                }`}
+              >
                 {asset.status}
               </span>
             </div>
-            <p className="text-xs md:text-sm font-bold text-[var(--shell-muted)] mt-1">
-              {asset.id} • {asset.issuer}
+            <p className="text-xs md:text-sm font-bold text-[var(--shell-muted)] mt-1.5 flex items-center gap-1.5">
+              <span className="font-black text-[var(--foreground)] opacity-60">{asset.id}</span>
+              <span className="opacity-40">•</span>
+              <span>{asset.issuer}</span>
             </p>
           </div>
         </div>
@@ -445,6 +517,28 @@ export default function AssetDetailPage({
                     </p>
                   </div>
                 </div>
+                
+                <div className="bg-[var(--shell-active)] p-6 md:p-8 rounded-[24px] md:rounded-[32px] text-white shadow-xl shadow-[var(--shell-active)]/20 transition-colors duration-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-3">
+                        <Coins className="w-6 h-6 md:w-8 md:h-8 opacity-70 shrink-0" />
+                        <h3 className="text-base md:text-lg font-black">
+                          Secondary Market Liquidity
+                        </h3>
+                      </div>
+                      <p className="text-xs md:text-sm font-bold opacity-80 leading-relaxed max-w-xl">
+                        Access decentralized liquidity pools for this asset on the Maxtronize DEX.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all font-black text-[11px] uppercase whitespace-nowrap sm:self-center"
+                    >
+                      View Liquidity Pools
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-6 md:space-y-8">
@@ -510,23 +604,6 @@ export default function AssetDetailPage({
                       Download Report
                     </button>
                   </div>
-                </div>
-
-                <div className="bg-[var(--shell-active)] p-6 md:p-8 rounded-[24px] md:rounded-[32px] text-white shadow-xl shadow-[var(--shell-active)]/20">
-                  <Coins className="w-10 h-10 md:w-12 md:h-12 mb-6 opacity-40" />
-                  <h3 className="text-base md:text-lg font-black mb-2">
-                    Secondary Market
-                  </h3>
-                  <p className="text-xs md:text-sm font-bold opacity-80 leading-relaxed mb-6">
-                    Access decentralized liquidity pools for this asset on the
-                    Maxtronize DEX.
-                  </p>
-                  <button
-                    type="button"
-                    className="w-full py-3.5 rounded-xl bg-white/10 hover:bg-white/20 transition-all font-black text-[11px] uppercase"
-                  >
-                    View Liquidity Pools
-                  </button>
                 </div>
               </div>
             </div>
@@ -610,8 +687,16 @@ export default function AssetDetailPage({
                         <p className="text-sm font-black text-[var(--foreground)]">{issue.type}</p>
                         <p className="text-xs text-[var(--shell-muted)] font-bold">{issue.description}</p>
                       </div>
-                      <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase">
-                        <Check size={11} />
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase whitespace-nowrap border ${
+                        issue.status?.toLowerCase().includes("review") || issue.status?.toLowerCase().includes("pending")
+                          ? "bg-blue-500/10 border-blue-500/20 text-blue-500"
+                          : issue.status?.toLowerCase().includes("fail") || issue.status?.toLowerCase().includes("reject")
+                            ? "bg-rose-500/10 border-rose-500/20 text-rose-500"
+                            : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                      }`}>
+                        {!(issue.status?.toLowerCase().includes("review") || issue.status?.toLowerCase().includes("pending")) && (
+                          <Check size={11} className="shrink-0" />
+                        )}
                         {issue.status}
                       </span>
                     </div>
@@ -654,16 +739,13 @@ export default function AssetDetailPage({
                       <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[9px] font-black uppercase">
                         {doc.status}
                       </span>
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download={doc.name}
+                      <button
+                        onClick={() => handleDownloadDocument(doc.url, doc.name)}
                         className="p-2 rounded-lg hover:bg-slate-800 text-[var(--shell-muted)] hover:text-white transition-colors"
                         title="Download Document"
                       >
                         <Download size={16} />
-                      </a>
+                      </button>
                     </div>
                   </div>
                 ))}

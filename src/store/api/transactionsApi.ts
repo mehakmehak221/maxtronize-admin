@@ -48,8 +48,8 @@ function mapTransaction(tx: any): TransactionItem {
     "";
 
   return {
-    id: tx.id || tx.transactionId || "",
-    type: tx.type || tx.transactionType || "Investment",
+    id: tx.txId || tx.id || tx.transactionId || "",
+    type: tx.typeLabel || tx.type || tx.transactionType || "Investment",
     asset: assetName,
     investor: investorName,
     amount: typeof tx.amount === "number"
@@ -62,10 +62,16 @@ function mapTransaction(tx: any): TransactionItem {
       : typeof tx.fee === "string"
         ? tx.fee
         : "$0",
-    status: tx.status || "Pending",
-    date: tx.createdAt
-      ? new Date(tx.createdAt).toLocaleString()
-      : tx.date || "",
+    status: tx.statusLabel || tx.status || "Pending",
+    date: (() => {
+      const raw = tx.occurredAt && typeof tx.occurredAt === "string" ? tx.occurredAt
+        : tx.createdAt && typeof tx.createdAt === "string" ? tx.createdAt
+          : typeof tx.date === "string" ? tx.date
+            : "";
+      if (!raw) return "";
+      const d = new Date(raw);
+      return isNaN(d.getTime()) ? "" : d.toLocaleString();
+    })(),
   };
 }
 

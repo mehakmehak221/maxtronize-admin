@@ -141,6 +141,15 @@ function extractArray(response: any): any[] {
   return [];
 }
 
+/** Returns a formatted date string, or "" if the value is missing/invalid (e.g. empty object {}). */
+function safeDate(value: any, opts?: { time?: boolean; month?: boolean }): string {
+  if (!value || (typeof value !== "string" && typeof value !== "number")) return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
+  if (opts?.month) return d.toLocaleDateString("en-US", { month: "short" });
+  return opts?.time ? d.toLocaleString() : d.toLocaleDateString();
+}
+
 function mapInvestorDetail(response: any, id: string): InvestorDetail {
   const root = robustUnwrap(response);
   const header = root?.header || root?.investor || {};
@@ -166,7 +175,7 @@ function mapInvestorDetail(response: any, id: string): InvestorDetail {
     email: header.email || "",
     phone: header.phone || "",
     country: header.country || header.location || "Unknown",
-    joined: header.joinedAt ? new Date(header.joinedAt).toLocaleDateString() : (header.joined || "N/A"),
+    joined: safeDate(header.joinedAt) || header.joined || "",
     wallet: header.walletAddress || header.wallet || "N/A",
     tier: header.tier || "Standard",
     status: header.kycStatusLabel || header.kycStatus || header.status || "Pending",
@@ -190,7 +199,7 @@ function mapInvestorDetail(response: any, id: string): InvestorDetail {
       : (Array.isArray(overview.portfolioAllocation) ? overview.portfolioAllocation : []),
     performanceData: Array.isArray(overview.performance?.series)
       ? overview.performance.series.map((item: any) => ({
-        name: item.date ? new Date(item.date).toLocaleDateString('en-US', { month: 'short' }) : (item.name || "Jan"),
+        name: safeDate(item.date, { month: true }) || item.name || "Jan",
         value: item.value || 0,
       }))
       : (Array.isArray(overview.performanceData) ? overview.performanceData : []),
@@ -222,7 +231,7 @@ function mapInvestorDetail(response: any, id: string): InvestorDetail {
         type: typeof tx.type === "string" ? tx.type : "Investment",
         asset: tx.assetName || (typeof tx.asset === "string" ? tx.asset : (tx.asset?.name || "")),
         amount: `${tx.type === "Investment" ? "-" : "+"}${formatUSD(tx.amount || 0)}`,
-        date: tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : (tx.date || "N/A"),
+        date: safeDate(tx.timestamp) || tx.date || "",
         status: typeof tx.status === "string" ? tx.status : "Completed",
       }))
       : Array.isArray(root?.transactions)
@@ -230,7 +239,7 @@ function mapInvestorDetail(response: any, id: string): InvestorDetail {
           type: typeof tx.type === "string" ? tx.type : "Investment",
           asset: tx.assetName || (typeof tx.asset === "string" ? tx.asset : (tx.asset?.name || "")),
           amount: `${tx.type === "Investment" ? "-" : "+"}${formatUSD(tx.amount || 0)}`,
-          date: tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : (tx.date || "N/A"),
+          date: safeDate(tx.timestamp) || tx.date || "",
           status: typeof tx.status === "string" ? tx.status : "Completed",
         }))
         : [],
@@ -238,7 +247,7 @@ function mapInvestorDetail(response: any, id: string): InvestorDetail {
       ? root.compliance.checks.map((item: any) => ({
         label: item.title || item.label || "",
         status: item.status || "Pending",
-        date: item.lastUpdated ? new Date(item.lastUpdated).toLocaleDateString() : (item.date || "N/A"),
+        date: safeDate(item.lastUpdated) || item.date || "",
         desc: item.description || item.desc || "",
         key: item.key,
         canApprove: item.canApprove,
@@ -275,7 +284,7 @@ export const investorsApi = baseApi.injectEndpoints({
             kycStatus: item.kycStatusLabel || item.kycStatus || "Pending",
             portfolioValue: formatUSD(summary.portfolioValue || 0),
             invested: formatUSD(summary.totalInvested || 0),
-            joined: item.joinedAt ? new Date(item.joinedAt).toLocaleDateString() : "N/A",
+            joined: safeDate(item.joinedAt) || "",
             initials: initials,
             color: "bg-[var(--shell-active)]",
           };
@@ -305,7 +314,7 @@ export const investorsApi = baseApi.injectEndpoints({
         return checks.map((item: any) => ({
           label: item.title || item.label || "",
           status: item.status || "Pending",
-          date: item.lastUpdated ? new Date(item.lastUpdated).toLocaleDateString() : (item.date || "N/A"),
+          date: safeDate(item.lastUpdated) || item.date || "",
           desc: item.description || item.desc || "",
         }));
       },
@@ -366,7 +375,7 @@ export const investorsApi = baseApi.injectEndpoints({
           name: header.name || "Unknown",
           email: header.email || "",
           country: header.country || header.location || "Unknown",
-          joined: header.joinedAt ? new Date(header.joinedAt).toLocaleDateString() : (header.joined || "N/A"),
+          joined: safeDate(header.joinedAt) || header.joined || "",
           kycStatus: header.kycStatusLabel || header.kycStatus || header.status || "Pending",
           activeInvestments: summary.activeInvestments || 0,
           portfolioValue: summary.portfolioValue !== undefined ? `$${Number(summary.portfolioValue).toLocaleString()}` : "$0",
@@ -491,7 +500,7 @@ export const investorsApi = baseApi.injectEndpoints({
           type: typeof tx.type === "string" ? tx.type : "Investment",
           asset: tx.assetName || (typeof tx.asset === "string" ? tx.asset : (tx.asset?.name || "")),
           amount: `${tx.type === "Investment" ? "-" : "+"}${formatUSD(tx.amount || 0)}`,
-          date: tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : (tx.date || "N/A"),
+          date: safeDate(tx.timestamp) || tx.date || "",
           status: typeof tx.status === "string" ? tx.status : "Completed",
         }));
       },

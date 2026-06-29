@@ -197,14 +197,14 @@ export default function UsersPage() {
                     key={investor.id}
                     className="group hover:bg-[var(--shell-subtle)] transition-colors"
                   >
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-4">
+                    <td className="px-8 py-5 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
                         <div
-                          className={`w-10 h-10 rounded-full ${investor.color} flex items-center justify-center text-white font-black text-xs shadow-lg shadow-black/5`}
+                          className={`w-9 h-9 shrink-0 rounded-full ${investor.color} flex items-center justify-center text-white font-black text-xs shadow-md`}
                         >
                           {investor.initials}
                         </div>
-                        <span className="text-sm font-black text-[var(--foreground)]">
+                        <span className="text-sm font-black text-[var(--foreground)] truncate max-w-[160px]">
                           {investor.name}
                         </span>
                       </div>
